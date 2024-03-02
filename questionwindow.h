@@ -3,7 +3,7 @@
 
 #include "secondlayoutwindow.h"
 #include "sqltreemodel.h"
-#include "filterproxymodel.h"
+// #include "filterproxymodel.h"
 
 #include <QWidget>
 #include <QPushButton>
@@ -28,7 +28,7 @@ class QuestionWindow : public SecondLayoutWindow
 
     QSqlTableModel *table_model;
     SqlTreeModel *tree_model;
-    FilterProxyModel *filter_model;
+    // FilterProxyModel *filter_model;
 
     QTableView *table_view;
     QTableView *table_proxy_view;

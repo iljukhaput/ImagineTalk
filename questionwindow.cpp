@@ -33,15 +33,15 @@ QuestionWindow::QuestionWindow(QString &user, QWidget *parent)
     hbx_btn_layout->addWidget(pb_home);
     hbx_btn_layout->setAlignment(Qt::AlignCenter);
 
-    // selected_QA_image = new QLabel("no image");
-    // selected_QA_image->setMinimumWidth(320);
-    // selected_QA_image->setAlignment(Qt::AlignCenter);
+    selected_QA_image = new QLabel("no image");
+    selected_QA_image->setMinimumWidth(320);
+    selected_QA_image->setAlignment(Qt::AlignCenter);
 
     QHBoxLayout *hbx_wgt_layout = new QHBoxLayout;
     hbx_wgt_layout->addWidget(tree_view);
-    hbx_wgt_layout->addWidget(table_proxy_view);
+    // hbx_wgt_layout->addWidget(table_proxy_view);
     hbx_wgt_layout->addWidget(table_view);
-    // hbx_wgt_layout->addWidget(selected_QA_image);
+    hbx_wgt_layout->addWidget(selected_QA_image);
 
     QVBoxLayout *vbx_layout = new QVBoxLayout(this);
     vbx_layout->addLayout(hbx_wgt_layout);
@@ -54,11 +54,11 @@ void QuestionWindow::initView()
     table_model->setTable("Questions");
     table_model->select();
 
-    filter_model = new FilterProxyModel(user);
-    filter_model->setSourceModel(table_model);
+    // filter_model = new FilterProxyModel(user);
+    // filter_model->setSourceModel(table_model);
 
     tree_model = new SqlTreeModel(user);
-    tree_model->setSourceModel(filter_model);
+    tree_model->setSourceModel(table_model);
 
     tree_view = new QTreeView;
     tree_view->setModel(tree_model);
@@ -73,8 +73,8 @@ void QuestionWindow::initView()
     tree_view->setAlternatingRowColors(true);
     connect(tree_view, SIGNAL(clicked(QModelIndex)), this, SLOT(slotTreeViewClicked(QModelIndex)));
 
-    table_proxy_view = new QTableView;
-    table_proxy_view->setModel(filter_model);
+    // table_proxy_view = new QTableView;
+    // table_proxy_view->setModel(filter_model);
 
     table_view = new QTableView;
     table_view->setModel(table_model);

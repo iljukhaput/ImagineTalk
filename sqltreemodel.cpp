@@ -140,7 +140,6 @@ void SqlTreeModel::deleteOneRow(QModelIndex &index)
     QSqlQuery* q = new QSqlQuery;
     q->prepare("DELETE FROM Questions WHERE id=?");
     q->addBindValue(id);
-    q->addBindValue(user);
     q->exec();
     delete q;
 }
