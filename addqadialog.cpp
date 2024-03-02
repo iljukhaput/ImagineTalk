@@ -72,9 +72,9 @@ void AddQADialog::slotAddImage()
     QPixmap image(image_path);
     image = image.scaledToWidth(200);
     if (image.height() > image.width()) {
-        image = image.scaledToHeight(200);
+        image = image.scaledToHeight(200, Qt::SmoothTransformation);
     } else {
-        image = image.scaledToWidth(200);
+        image = image.scaledToWidth(200, Qt::SmoothTransformation);
     }
     label->setPixmap(image);
     //label->setScaledContents(true);

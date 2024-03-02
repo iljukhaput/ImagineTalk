@@ -160,6 +160,7 @@ void DialogWindow::slotGoToPreviousAnswer()
     backpath.pop_back();
 }
 
+
 void DialogWindow::slotClearStackedWidget()
 {
     while(stacked_widget_dialog->count() != 0) {
@@ -182,6 +183,7 @@ void DialogWindow::slotShowInitialQuestion()
 {
     slotShowAnswers(0);
 }
+
 
 void DialogWindow::clearStackedWidget()
 {

@@ -137,7 +137,7 @@ void QuestionWindow::slotTreeViewClicked(QModelIndex selected_index)
         if (!image.isEmpty()) {
             QPixmap pix;
             pix.loadFromData(image);
-            pix = pix.scaledToWidth(300);
+            pix = pix.scaledToWidth(300, Qt::SmoothTransformation);
             selected_QA_image->setPixmap(pix);
         } else {
             QString text = query->value("question").toString();
