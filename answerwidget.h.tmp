@@ -1,0 +1,13 @@
+#ifndef ANSWERWIDGET_H
+#define ANSWERWIDGET_H
+
+#include <QPushButton>
+
+class Answer : public QPushButton
+{
+    Q_OBJECT
+public:
+    Answer(QWidget *parent = nullptr);
+};
+
+#endif // ANSWERWIDGET_H
