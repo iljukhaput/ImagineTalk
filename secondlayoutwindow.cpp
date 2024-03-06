@@ -1,13 +1,15 @@
 #include "secondlayoutwindow.h"
 #include <QDebug>
 #include <QSqlQuery>
+#include <QSqlError>
+#include <QSqlRecord>
 
 QSqlDatabase SecondLayoutWindow::db = QSqlDatabase::addDatabase("QSQLITE");
 
-SecondLayoutWindow::SecondLayoutWindow(QString &user, QWidget *parent)
-    : QWidget(parent), user(user)
+SecondLayoutWindow::SecondLayoutWindow(QString &user, int table_id, QWidget *parent)
+    : QWidget(parent), user(user), table_id(table_id)
 {
-    pb_home = new QPushButton("Home", this);
+    pb_home = new QPushButton("На главный экран", this);
 }
 
 
@@ -20,35 +22,52 @@ void SecondLayoutWindow::ConnectPbHome(QSignalMapper &signal_mapper, QStackedWid
 
 bool SecondLayoutWindow::initDB()
 {
-    if(!db.isOpen()) {
-        db.setDatabaseName("testDB.db");
-        if(db.open()) {
-            qDebug() << "Data base opened";
-            QSqlQuery *query = new QSqlQuery(db);
-            query->prepare("CREATE TABLE Questions ("
-                        "id INTEGER PRIMARY KEY, "
-                        "question TEXT, "
-                        "image BLOB, "
-                        "parentId  INT, "
-                        "user TEXT);");
-            // query->addBindValue(user);
-
-            // query->exec("INSERT INTO Questions (question, type, parentId)"
-            //             "VALUES ('What do you wnat?', 'Q', 0),"
-            //             "('Eat', 'A', 1);");
-            return true;
-        }
-        else {
-            qDebug() << "Data base didn't open\n";
-        }
+    if(db.isOpen()) {
+        return true;
     }
-    return false;
+    db.setDatabaseName("testDB.db");
+
+    if(!db.open()) {
+        qDebug() << "open DB failed: " << db.lastError().text();
+        return false;
+    }
+
+    qDebug() << "Data base opened";
+
+    QSqlRecord table_users = db.record("Users");
+    if(!table_users.isEmpty()) {
+        return true;
+    }
+
+    QSqlQuery query(db);
+    query.prepare("CREATE TABLE Users (user TEXT, table_number INT);");
+    if(!query.exec()) {
+        qDebug() << "Create table Users failed: " << query.lastError().text();
+        return false;
+    }
+    return true;
 }
 
-SecondLayoutWindow::~SecondLayoutWindow()
+
+void SecondLayoutWindow::closeDB()
 {
     if(db.isOpen()) {
         db.close();
         qDebug() << "DB is closed";
     }
 }
+
+
+int SecondLayoutWindow::getUserTableId()
+{
+    QSqlQuery q(db);
+    q.prepare("SELECT table_number FROM Users WHERE user=?");
+    q.addBindValue(user);
+    q.exec();
+    if (q.first()) {
+        return q.value("table_number").toInt();
+    } else {
+        return -1;
+    }
+}
+

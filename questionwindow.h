@@ -30,14 +30,15 @@ class QuestionWindow : public SecondLayoutWindow
     SqlTreeModel *tree_model;
     // FilterProxyModel *filter_model;
 
-    QTableView *table_view;
-    QTableView *table_proxy_view;
+    // QTableView *table_view;
+    // QTableView *table_proxy_view;
     QTreeView *tree_view;
 
     QLabel *selected_QA_image;
     void initView();
 public:
-    explicit QuestionWindow(QString &user, QWidget *parent = nullptr);
+    explicit QuestionWindow(QString &user, int table_id, QWidget *parent = nullptr);
+    ~QuestionWindow();
 private slots:
     void slotAddQuestionAnswer();
     void slotDeleteQuestionAnswer();

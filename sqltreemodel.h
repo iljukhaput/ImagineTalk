@@ -9,8 +9,9 @@ class SqlTreeModel : public QAbstractProxyModel
     Q_OBJECT
 
     QString user;
+    int table_id;
 public:
-    SqlTreeModel(QString user, QObject *parent = nullptr);
+    SqlTreeModel(QString user, int table_id, QObject *parent = nullptr);
     virtual QModelIndex mapFromSource(const QModelIndex &sourceIndex) const override;
     virtual QModelIndex mapToSource(const QModelIndex &proxyIndex) const override;
     virtual QModelIndex parent(const QModelIndex &child) const override;
@@ -28,7 +29,7 @@ public:
     virtual bool hasChildren(const QModelIndex &parent) const override;
     virtual Qt::ItemFlags flags(const QModelIndex &index) const override;
     void deleteQA(QModelIndex &index);
-    void addRow(const QModelIndex &parent, const QString &question, const QByteArray *image, const QString &user);
+    void addRow(const QModelIndex &parent, const QString &question, const QByteArray *image);
 private:
     int getParentId(int childId) const;
     QSqlQuery* getChildren(int parentId) const;

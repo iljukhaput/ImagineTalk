@@ -46,6 +46,7 @@ else()
             answerwidget.h answerwidget.cpp
             addqadialog.h addqadialog.cpp
             filterproxymodel.h filterproxymodel.cpp
+            acceptdialog.h acceptdialog.cpp
         )
     endif()
 endif()

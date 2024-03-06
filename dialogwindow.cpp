@@ -12,28 +12,28 @@
 #include <QPushButton>
 #include <QStackedWidget>
 
-DialogWindow::DialogWindow(QString &user, QWidget *parent)
-    : SecondLayoutWindow(user, parent)
+DialogWindow::DialogWindow(QString &user, int table_id, QWidget *parent)
+    : SecondLayoutWindow(user, table_id, parent)
     , scale(1)
 {
-    qDebug() << "Constructor DialogWindow"; // --------------------------- DEBUG
+    qDebug() << "Constructor DialogWindow - " << this; // --------------------------- DEBUG
     stacked_widget_dialog = new QStackedWidget();
 
-    QSize size_pb(100, 30);
+    QSize size_pb(150, 30);
 
     pb_home->setFixedSize(size_pb);
     connect(pb_home, SIGNAL(clicked()), this, SLOT(slotClearStackedWidget()));
 
-    QPushButton *pb_back = new QPushButton("Back");
+    QPushButton *pb_back = new QPushButton("Назад");
     pb_back->setFixedSize(size_pb);
     connect(pb_back, SIGNAL (clicked()), this, SLOT (slotGoToPreviousAnswer()));
 
     QPushButton *pb_increase = new QPushButton("+");
-    pb_increase->setFixedSize(size_pb);
+    pb_increase->setFixedSize(70, 30);
     connect(pb_increase, SIGNAL (clicked()), this, SLOT (slotIncreaseImages()));
 
     QPushButton *pb_decrease = new QPushButton("-");
-    pb_decrease->setFixedSize(size_pb);
+    pb_decrease->setFixedSize(70, 30);
     connect(pb_decrease, SIGNAL (clicked()), this, SLOT (slotDecreaseImages()));
 
     QHBoxLayout *hbx_layout = new QHBoxLayout();
@@ -48,6 +48,11 @@ DialogWindow::DialogWindow(QString &user, QWidget *parent)
     vbx_layout->addLayout(hbx_layout);
     vbx_layout->setAlignment(Qt::AlignCenter);
     this->setLayout(vbx_layout);
+}
+
+DialogWindow::~DialogWindow()
+{
+    qDebug() << "Destructor DialogWindow - " << this;
 }
 
 void DialogWindow::slotShowAnswers(int id)
@@ -66,7 +71,7 @@ void DialogWindow::slotShowAnswers(int id)
 QScrollArea *DialogWindow::createQAWidget(int id)
 {
     QSqlQuery *query = new QSqlQuery(db);
-    query->prepare("SELECT * FROM Questions WHERE parentId=?");
+    query->prepare("SELECT * FROM user_" + QString::number(table_id) + " WHERE parentId=?");
     query->addBindValue(id);
     query->exec();
 

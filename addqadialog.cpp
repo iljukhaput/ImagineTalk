@@ -14,29 +14,18 @@
 
 AddQADialog::AddQADialog(QWidget *parent, Qt::WindowFlags f) : QDialog(parent, f)
 {
-    /*
-    QRadioButton *rb_question = new QRadioButton("Question");
-    QRadioButton *rb_answer = new QRadioButton("Answer");
-    QVBoxLayout *vbx_rb = new QVBoxLayout;
-    vbx_rb->addWidget(rb_question);
-    vbx_rb->addWidget(rb_answer);
-    QGroupBox *gbx_rb = new QGroupBox;
-    gbx_rb->setLayout(vbx_rb);
-    rb_answer->setChecked(true);
-    */
-
-    QLabel *line_header = new QLabel("Question or answer:");
+    QLabel *line_header = new QLabel("Текст вопроса или ответа:");
     line = new QLineEdit;
     line->setClearButtonEnabled(true);
 
-    QPushButton *pb_ok = new QPushButton("Ok");
+    QPushButton *pb_ok = new QPushButton("Ок");
     pb_ok->setDefault(true);
     connect(pb_ok, SIGNAL(clicked()), this, SLOT(accept()));
 
-    QPushButton *pb_cancel = new QPushButton("Cancel");
+    QPushButton *pb_cancel = new QPushButton("Отмена");
     connect(pb_cancel, SIGNAL(clicked()), this, SLOT(reject()));
 
-    QPushButton *pb_add_image = new QPushButton("Add image");
+    QPushButton *pb_add_image = new QPushButton("Добавить изображение");
     connect(pb_add_image, SIGNAL(clicked()), this, SLOT(slotAddImage()));
 
     QHBoxLayout *hbx_layuot = new QHBoxLayout;
@@ -53,19 +42,19 @@ AddQADialog::AddQADialog(QWidget *parent, Qt::WindowFlags f) : QDialog(parent, f
     QGroupBox *gbx_vbx = new QGroupBox;
     gbx_vbx->setLayout(vbx_layuot);
 
-    label = new QLabel("no image");
+    label = new QLabel;
     label->setMinimumSize(200, 200);
     label->setAlignment(Qt::AlignCenter);
-    QHBoxLayout *splitter = new QHBoxLayout(this);
-    splitter->addWidget(gbx_vbx);
-    splitter->addWidget(label);
+    QHBoxLayout *hbx_layout = new QHBoxLayout(this);
+    hbx_layout->addWidget(gbx_vbx);
+    hbx_layout->addWidget(label);
 }
 
 
 void AddQADialog::slotAddImage()
 {
     QStringList desktop_path = QStandardPaths::standardLocations(QStandardPaths::DesktopLocation);
-    image_path = QFileDialog::getOpenFileName(this, "Open Image", desktop_path.first(), "Image Files (*.jpg *.png *.bmp *.jpeg)");
+    image_path = QFileDialog::getOpenFileName(this, "Открыть изображение", desktop_path.first(), "Image Files (*.jpg *.png *.bmp *.jpeg)");
     if (image_path.isEmpty())
         return;
 

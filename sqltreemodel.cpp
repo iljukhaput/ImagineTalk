@@ -1,9 +1,13 @@
 #include "sqltreemodel.h"
 #include <QDebug>
+#include <QSqlError>
 
 enum {id_coumn = 0};
 
-SqlTreeModel::SqlTreeModel(QString user, QObject *parent) : QAbstractProxyModel(parent), user(user) {}
+SqlTreeModel::SqlTreeModel(QString user, int table_id, QObject *parent)
+    : QAbstractProxyModel(parent)
+    , user(user)
+    , table_id(table_id) {}
 
 
 QModelIndex SqlTreeModel::mapFromSource(const QModelIndex &sourceIndex) const
@@ -33,8 +37,11 @@ QModelIndex SqlTreeModel::mapToSource(const QModelIndex &proxyIndex) const
     int id = proxyIndex.internalId();
 
     QSqlQuery q;
-    q.prepare("SELECT id FROM Questions");
-    q.exec();
+    q.prepare("SELECT id FROM user_" + QString::number(table_id));
+    if(!q.exec()) {
+        qDebug() << "Error in SqlTreeModel::mapToSource:" << q.lastError().text();
+    }
+
     int row = -1;
     while(q.next()) {
         row++;
@@ -47,9 +54,11 @@ QModelIndex SqlTreeModel::mapToSource(const QModelIndex &proxyIndex) const
 bool SqlTreeModel::hasChildren(const QModelIndex &parent) const {
 
     QSqlQuery q;
-    q.prepare("SELECT COUNT(*) FROM Questions WHERE parentId=?");
+    q.prepare("SELECT COUNT(*) FROM user_" + QString::number(table_id) + " WHERE parentId=?");
     q.addBindValue(parent.internalId());
-    q.exec();
+    if(!q.exec()) {
+        qDebug() << "Error in SqlTreeModel::hasChildren:" << q.lastError().text();
+    }
     q.first();
     return q.value(id_coumn).toInt() > 0;
 }
@@ -97,18 +106,22 @@ int SqlTreeModel::rowCount(const QModelIndex &parent) const {
 
 int SqlTreeModel::getParentId(int childId) const {
     QSqlQuery q;
-    q.prepare("SELECT parentId FROM Questions WHERE id=?");
+    q.prepare("SELECT parentId FROM user_" + QString::number(table_id) + " WHERE id=?");
     q.addBindValue(childId);
-    q.exec();
+    if(!q.exec()) {
+        qDebug() << "Error in SqlTreeModel::getParentId:" << q.lastError().text();
+    }
     q.first();
     return q.value(id_coumn).toInt();
 }
 
 QSqlQuery* SqlTreeModel::getChildren(int parentId) const {
     QSqlQuery* q = new QSqlQuery;
-    q->prepare("SELECT id FROM Questions WHERE parentId=?");
+    q->prepare("SELECT id FROM user_" + QString::number(table_id) + " WHERE parentId=?");
     q->addBindValue(parentId);
-    q->exec();
+    if(!q->exec()) {
+        qDebug() << "Error in SqlTreeModel::getChildren:" << q->lastError().text();
+    }
     return q;
 }
 
@@ -138,35 +151,35 @@ void SqlTreeModel::deleteOneRow(QModelIndex &index)
 {
     int id = index.internalId();
     QSqlQuery* q = new QSqlQuery;
-    q->prepare("DELETE FROM Questions WHERE id=?");
+    q->prepare("DELETE FROM user_" + QString::number(table_id) + " WHERE id=?");
     q->addBindValue(id);
-    q->exec();
+    if(!q->exec()) {
+        qDebug() << "Error in SqlTreeModel::deleteOneRow:" << q->lastError().text();
+    }
     delete q;
 }
 
 
-void SqlTreeModel::addRow(const QModelIndex &parent, const QString &question, const QByteArray *image, const QString &user)
+void SqlTreeModel::addRow(const QModelIndex &parent, const QString &question, const QByteArray *image)
 {
     beginResetModel();
     QModelIndex source_index = mapFromSource(parent);
     int id = source_index.internalId();
     QSqlQuery *query = new QSqlQuery;
     if(image) {
-        query->prepare("INSERT INTO Questions (question, image, parentId, user)"
-                       "VALUES (?, ?, ?, ?)");
+        query->prepare("INSERT INTO user_" + QString::number(table_id) + " (question, image, parentId)"
+                       "VALUES (?, ?, ?)");
         query->addBindValue(question);
         query->addBindValue(*image);
         query->addBindValue(id);
-        query->addBindValue(user);
     } else {
-        query->prepare("INSERT INTO Questions (question, parentId, user)"
-                       "VALUES (?, ?, ?)");
+        query->prepare("INSERT INTO user_" + QString::number(table_id) + " (question, parentId)"
+                       "VALUES (?, ?)");
         query->addBindValue(question);
         query->addBindValue(id);
-        query->addBindValue(user);
     }
     if(!query->exec())
-        qDebug() << "Error inserting row into table:\n";
+        qDebug() << "Error in SqlTreeModel::addRow:" << query->lastError().text();
     delete query;
     endResetModel();
 }

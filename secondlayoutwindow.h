@@ -12,12 +12,15 @@ class SecondLayoutWindow : public QWidget
     Q_OBJECT
 protected:
     QString user;
+    int table_id;
     QPushButton *pb_home;
 public:
     static QSqlDatabase db;
     static bool initDB();
-    explicit SecondLayoutWindow(QString &user, QWidget *parent = nullptr);
-    virtual ~SecondLayoutWindow();
+    static void closeDB();
+    int getUserTableId();
+    explicit SecondLayoutWindow(QString &user, int table_id, QWidget *parent = nullptr);
+    virtual ~SecondLayoutWindow() {}
     void ConnectPbHome(QSignalMapper &sig_map, QStackedWidget &stack_wgt, QWidget &wgt_home) const;
 };
 
