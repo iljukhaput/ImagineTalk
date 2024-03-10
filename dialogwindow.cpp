@@ -19,7 +19,12 @@ DialogWindow::DialogWindow(QString &user, int table_id, QWidget *parent)
     qDebug() << "Constructor DialogWindow - " << this; // --------------------------- DEBUG
     stacked_widget_dialog = new QStackedWidget();
 
-    QSize size_pb(150, 30);
+    QFontMetrics fm(font());
+    QString max_string("На главный экран"); // maximum length string
+    int width = fm.horizontalAdvance(max_string) + 20;
+    int height = fm.height() + 20;
+
+    QSize size_pb(width, height);
 
     pb_home->setFixedSize(size_pb);
     connect(pb_home, SIGNAL(clicked()), this, SLOT(slotClearStackedWidget()));
@@ -29,11 +34,11 @@ DialogWindow::DialogWindow(QString &user, int table_id, QWidget *parent)
     connect(pb_back, SIGNAL (clicked()), this, SLOT (slotGoToPreviousAnswer()));
 
     QPushButton *pb_increase = new QPushButton("+");
-    pb_increase->setFixedSize(70, 30);
+    pb_increase->setFixedSize(size_pb.width() / 2, size_pb.height());
     connect(pb_increase, SIGNAL (clicked()), this, SLOT (slotIncreaseImages()));
 
     QPushButton *pb_decrease = new QPushButton("-");
-    pb_decrease->setFixedSize(70, 30);
+    pb_decrease->setFixedSize(size_pb.width() / 2, size_pb.height());
     connect(pb_decrease, SIGNAL (clicked()), this, SLOT (slotDecreaseImages()));
 
     QHBoxLayout *hbx_layout = new QHBoxLayout();

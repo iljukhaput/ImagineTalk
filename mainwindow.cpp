@@ -42,17 +42,21 @@ void MainWindow::CreateMainWindow(QString &user)
     wgt_main = new QWidget;
     stacked_widget_main->addWidget(wgt_main);
 
-    QSize size_pb(200, 100);
+
+    QFontMetrics fm(font());
+    QString max_string("Вернуться к выбору пользователя"); // maximum length string
+    int width = fm.horizontalAdvance(max_string) + 40;
+    QSize size_pb(width, 100);
 
     QLabel *lbl_username = new QLabel(user);
-    lbl_username->setFixedSize(200, 50);
+    lbl_username->setFixedSize(size_pb.width(), 50);
     lbl_username->setAlignment(Qt::AlignCenter);
     lbl_username->setWordWrap(true);
 
     pb_start_dialog = new QPushButton("Начать диалог");
     pb_start_dialog->setFixedSize(size_pb);
 
-    pb_add_question = new QPushButton("Добавить вопрос/ответ");
+    pb_add_question = new QPushButton("Список вопросов/ответов");
     pb_add_question->setFixedSize(size_pb);
 
     pb_user_selection = new QPushButton("Вернуться к выбору пользователя");
@@ -80,10 +84,13 @@ void MainWindow::CreateChooseUserWindow()
     wgt_choose_user = new QWidget;
     stacked_widget_main->addWidget(wgt_choose_user);
 
-    QSize size_pb(200, 100);
+    QFontMetrics fm(font());
+    QString max_string("Удалить выбранного пользователя"); // maximum length string
+    int width = fm.horizontalAdvance(max_string) + 40;
+    QSize size_pb(width, 100);
 
     cbx_users = new QComboBox;
-    cbx_users->setFixedSize(200, 50);
+    cbx_users->setFixedSize(size_pb.width(), 50);
     FillComboBox(*cbx_users);
 
     QPushButton *pb_ok = new QPushButton("Ок");
@@ -227,11 +234,18 @@ int MainWindow::getUserTableId(QString &user)
 
 void MainWindow::slotAddUser()
 {
-    bool ok;
-    QString username = QInputDialog::getText(this, tr("Добавить нового пользователя"),
-                                         tr("Имя пользователя:"), QLineEdit::Normal,
-                                         QString(), &ok);
-    if (ok && !username.isEmpty())
+
+    QInputDialog dialog(this);
+    dialog.setLabelText("Имя пользователя:");
+    dialog.setInputMode(QInputDialog::TextInput);
+    dialog.setOkButtonText("Ок");
+    dialog.setCancelButtonText("Отмена");
+    if (!dialog.exec()) {
+        return;
+    }
+
+    QString username = dialog.textValue();
+    if (!username.isEmpty())
     {
         int table_id = createUserTableId();
         cbx_users->addItem(username);

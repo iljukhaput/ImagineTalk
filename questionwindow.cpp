@@ -17,7 +17,13 @@ QuestionWindow::QuestionWindow(QString &user, int table_id, QWidget *parent)
 {
     qDebug() << "Constructor QuestionWindow - " << this;
     initView();
-    QSize pb_size(150, 30);
+
+    QFontMetrics fm(font());
+    QString max_string("На главный экран"); // maximum length string
+    int width = fm.horizontalAdvance(max_string) + 20;
+    int height = fm.height() + 20;
+
+    QSize pb_size(width, height);
     pb_add = new QPushButton("Добавить");
     pb_add->setMinimumSize(pb_size);
     connect(pb_add, SIGNAL(clicked()), this, SLOT(slotAddQuestionAnswer()));
