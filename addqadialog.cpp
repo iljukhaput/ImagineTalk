@@ -59,7 +59,6 @@ void AddQADialog::slotAddImage()
         return;
 
     QPixmap image(image_path);
-    image = image.scaledToWidth(200);
     if (image.height() > image.width()) {
         image = image.scaledToHeight(200, Qt::SmoothTransformation);
     } else {

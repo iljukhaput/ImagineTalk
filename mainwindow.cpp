@@ -15,6 +15,8 @@
 #include <QMessageBox>
 #include <QSqlError>
 #include <QSqlRecord>
+#include <QByteArray>
+#include <QBuffer>
 
 
 MainWindow::MainWindow(QWidget *parent)
@@ -133,6 +135,113 @@ void MainWindow::FillComboBox(QComboBox &cbx)
 }
 
 
+void queryInsertRow(int table_id, int parent_id, const QString &question, QPixmap *image)
+{
+    QSqlQuery query(SecondLayoutWindow::db);
+    if(image) {
+        QByteArray byte_array;
+        QBuffer in_buffer(&byte_array);
+        in_buffer.open(QIODevice::WriteOnly);
+        image->save(&in_buffer, "PNG");
+
+        query.prepare("INSERT INTO user_" + QString::number(table_id) + " (question, image, parentId)"
+                                                                        "VALUES (?, ?, ?)");
+        query.addBindValue(question);
+        query.addBindValue(byte_array);
+        query.addBindValue(parent_id);
+    } else {
+        query.prepare("INSERT INTO user_" + QString::number(table_id) + " (question, parentId)"
+                                                                        "VALUES (?, ?)");
+        query.addBindValue(question);
+        query.addBindValue(parent_id);
+    }
+    if(!query.exec())
+        qDebug() << "Error in SqlTreeModel::addRow:" << query.lastError().text();
+}
+
+
+void fillUserTable(int table_id)
+{
+    queryInsertRow(table_id, 0, "Чего хочешь?", nullptr);
+
+    QPixmap *image = new QPixmap(":/what_you_want/base_questions/what_you_want/drink.jpg");
+    queryInsertRow(table_id, 1, "Пить", image);
+    delete image;
+
+    image = new QPixmap(":/what_you_want/base_questions/what_you_want/eat.jpg");
+    queryInsertRow(table_id, 1, "Есть", image);
+    delete image;
+
+    image = new QPixmap(":/what_you_want/base_questions/what_you_want/wc.jpg");
+    queryInsertRow(table_id, 1, "В туалет", image);
+    delete image;
+
+    image = new QPixmap(":/what_you_want/base_questions/what_you_want/sleep.jpg");
+    queryInsertRow(table_id, 1, "Спать", image);
+    delete image;
+
+    image = new QPixmap(":/what_you_want/base_questions/what_you_want/lie.jpg");
+    queryInsertRow(table_id, 1, "Лечь", image);
+    delete image;
+
+    image = new QPixmap(":/what_you_want/base_questions/what_you_want/sit.jpg");
+    queryInsertRow(table_id, 1, "Сесть", image);
+    delete image;
+
+    image = new QPixmap(":/what_you_want/base_questions/what_you_want/stand.jpg");
+    queryInsertRow(table_id, 1, "Встать", image);
+    delete image;
+
+    image = new QPixmap(":/what_you_want/base_questions/what_you_want/watch_tv.jpg");
+    queryInsertRow(table_id, 1, "Посмотреть телевизор", image);
+    delete image;
+
+    image = new QPixmap(":/what_you_want/base_questions/what_you_want/pressure.jpg");
+    queryInsertRow(table_id, 1, "Измерить давление", image);
+    delete image;
+
+    image = new QPixmap(":/what_you_want/base_questions/what_you_want/pills.jpg");
+    queryInsertRow(table_id, 1, "Выпить лекарство", image);
+    delete image;
+
+    image = new QPixmap(":/what_you_want/base_questions/what_you_want/brush_teeth.jpg");
+    queryInsertRow(table_id, 1, "Почистить зубы", image);
+    delete image;
+
+    image = new QPixmap(":/what_you_want/base_questions/what_you_want/wash_face.jpg");
+    queryInsertRow(table_id, 1, "Умыться", image);
+    delete image;
+
+    image = new QPixmap(":/what_you_want/base_questions/what_you_want/shower.jpg");
+    queryInsertRow(table_id, 1, "Принять душ", image);
+    delete image;
+
+    image = new QPixmap(":/what_you_want/base_questions/what_you_want/shave.jpg");
+    queryInsertRow(table_id, 1, "Побриться", image);
+    delete image;
+
+    image = new QPixmap(":/what_you_want/base_questions/what_you_want/take_bath.jpg");
+    queryInsertRow(table_id, 1, "Принять ванну", image);
+    delete image;
+
+    image = new QPixmap(":/what_you_want/base_questions/what_you_want/undress.jpg");
+    queryInsertRow(table_id, 1, "Раздеться", image);
+    delete image;
+
+    image = new QPixmap(":/what_you_want/base_questions/what_you_want/get_dressed.jpg");
+    queryInsertRow(table_id, 1, "Одеться", image);
+    delete image;
+
+    image = new QPixmap(":/what_you_want/base_questions/what_you_want/comb_hair.jpg");
+    queryInsertRow(table_id, 1, "Причесаться", image);
+    delete image;
+
+    image = new QPixmap(":/what_you_want/base_questions/what_you_want/haircut.jpg");
+    queryInsertRow(table_id, 1, "Подстричься", image);
+    delete image;
+}
+
+
 bool MainWindow::CreateUserTable(int id)
 {
     QString tablename = "user_" + QString::number(id);
@@ -150,6 +259,7 @@ bool MainWindow::CreateUserTable(int id)
         qDebug() << "Create User's questions table failed: " << query.lastError().text();
         return false;
     }
+    fillUserTable(id);
     return true;
 }
 

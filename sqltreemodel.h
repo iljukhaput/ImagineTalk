@@ -30,6 +30,7 @@ public:
     virtual Qt::ItemFlags flags(const QModelIndex &index) const override;
     void deleteQA(QModelIndex &index);
     void addRow(const QModelIndex &parent, const QString &question, const QByteArray *image);
+    void queryInsertRow(int table_id, int parent_id, const QString &question, const QByteArray *image);
 private:
     int getParentId(int childId) const;
     QSqlQuery* getChildren(int parentId) const;

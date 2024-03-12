@@ -147,6 +147,7 @@ void SqlTreeModel::deleteRecursively(QModelIndex &id)
     deleteOneRow(id);
 }
 
+
 void SqlTreeModel::deleteOneRow(QModelIndex &index)
 {
     int id = index.internalId();
@@ -165,24 +166,30 @@ void SqlTreeModel::addRow(const QModelIndex &parent, const QString &question, co
     beginResetModel();
     QModelIndex source_index = mapFromSource(parent);
     int id = source_index.internalId();
-    QSqlQuery *query = new QSqlQuery;
-    if(image) {
-        query->prepare("INSERT INTO user_" + QString::number(table_id) + " (question, image, parentId)"
-                       "VALUES (?, ?, ?)");
-        query->addBindValue(question);
-        query->addBindValue(*image);
-        query->addBindValue(id);
-    } else {
-        query->prepare("INSERT INTO user_" + QString::number(table_id) + " (question, parentId)"
-                       "VALUES (?, ?)");
-        query->addBindValue(question);
-        query->addBindValue(id);
-    }
-    if(!query->exec())
-        qDebug() << "Error in SqlTreeModel::addRow:" << query->lastError().text();
-    delete query;
+    queryInsertRow(table_id, id, question, image);
     endResetModel();
 }
+
+
+void SqlTreeModel::queryInsertRow(int table_id, int parent_id, const QString &question, const QByteArray *image)
+{
+    QSqlQuery query;
+    if(image) {
+        query.prepare("INSERT INTO user_" + QString::number(table_id) + " (question, image, parentId)"
+                                                                        "VALUES (?, ?, ?)");
+        query.addBindValue(question);
+        query.addBindValue(*image);
+        query.addBindValue(parent_id);
+    } else {
+        query.prepare("INSERT INTO user_" + QString::number(table_id) + " (question, parentId)"
+                                                                        "VALUES (?, ?)");
+        query.addBindValue(question);
+        query.addBindValue(parent_id);
+    }
+    if(!query.exec())
+        qDebug() << "Error in SqlTreeModel::addRow:" << query.lastError().text();
+}
+
 
 Qt::ItemFlags SqlTreeModel::flags(const QModelIndex &index) const {
     //QSqlTableModel doesn't allow children so use these flags

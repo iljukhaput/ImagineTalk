@@ -1,0 +1,23 @@
+<RCC>
+    <qresource prefix="/what_you_want">
+        <file>base_questions/what_you_want/brush_teeth.jpg</file>
+        <file>base_questions/what_you_want/comb_hair.jpg</file>
+        <file>base_questions/what_you_want/drink.jpg</file>
+        <file>base_questions/what_you_want/eat.jpg</file>
+        <file>base_questions/what_you_want/get_dressed.jpg</file>
+        <file>base_questions/what_you_want/haircut.jpg</file>
+        <file>base_questions/what_you_want/lie.jpg</file>
+        <file>base_questions/what_you_want/pills.jpg</file>
+        <file>base_questions/what_you_want/pressure.jpg</file>
+        <file>base_questions/what_you_want/shave.jpg</file>
+        <file>base_questions/what_you_want/shower.jpg</file>
+        <file>base_questions/what_you_want/sit.jpg</file>
+        <file>base_questions/what_you_want/sleep.jpg</file>
+        <file>base_questions/what_you_want/stand.jpg</file>
+        <file>base_questions/what_you_want/take_bath.jpg</file>
+        <file>base_questions/what_you_want/undress.jpg</file>
+        <file>base_questions/what_you_want/wash_face.jpg</file>
+        <file>base_questions/what_you_want/watch_tv.jpg</file>
+        <file>base_questions/what_you_want/wc.jpg</file>
+    </qresource>
+</RCC>

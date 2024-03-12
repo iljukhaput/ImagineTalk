@@ -10,7 +10,6 @@
 #include <QIcon>
 #include <QPicture>
 #include <QString>
-
 #include <QFileSystemModel>
 #include <QTreeView>
 #include <QSplitter>
