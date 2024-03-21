@@ -125,153 +125,489 @@ void MainWindow::CreateChooseUserWindow()
 
 void MainWindow::FillComboBox(QComboBox &cbx)
 {
-    QSqlQuery q(SecondLayoutWindow::db);
-    q.prepare("SELECT user FROM Users");
-    if(q.exec()) {
-        while(q.next()) {
-            cbx.addItem(q.value("user").toString());
+    {
+        QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE", "connection_name");
+        db.setDatabaseName("ImagineTalkDB.db");
+        db.open();
+
+        QSqlQuery q(db);
+        q.prepare("SELECT user FROM Users");
+        if(q.exec()) {
+            while(q.next()) {
+                cbx.addItem(q.value("user").toString());
+            }
         }
+
+        q.finish();
+        db.close();
     }
+    QSqlDatabase::removeDatabase("connection_name");
 }
 
 
-void queryInsertRow(int table_id, int parent_id, const QString &question, QPixmap *image)
+int queryInsertRow(int table_id, int parent_id, const QString &question, QPixmap *image)
 {
-    QSqlQuery query(SecondLayoutWindow::db);
-    if(image) {
-        QByteArray byte_array;
-        QBuffer in_buffer(&byte_array);
-        in_buffer.open(QIODevice::WriteOnly);
-        image->save(&in_buffer, "PNG");
+    int row = 0;
+    {
+        QSqlDatabase db = QSqlDatabase::database();
+        // db.setDatabaseName("ImagineTalkDB.db");
+        // db.open();
 
-        query.prepare("INSERT INTO user_" + QString::number(table_id) + " (question, image, parentId)"
-                                                                        "VALUES (?, ?, ?)");
-        query.addBindValue(question);
-        query.addBindValue(byte_array);
-        query.addBindValue(parent_id);
-    } else {
-        query.prepare("INSERT INTO user_" + QString::number(table_id) + " (question, parentId)"
-                                                                        "VALUES (?, ?)");
-        query.addBindValue(question);
-        query.addBindValue(parent_id);
+        QSqlQuery query(db);
+        if(image) {
+            QByteArray byte_array;
+            QBuffer in_buffer(&byte_array);
+            in_buffer.open(QIODevice::WriteOnly);
+            image->save(&in_buffer, "PNG");
+
+            query.prepare("INSERT INTO user_" + QString::number(table_id) + " (question, image, parentId)"
+                                                                            "VALUES (?, ?, ?)");
+            query.addBindValue(question);
+            query.addBindValue(byte_array);
+            query.addBindValue(parent_id);
+        } else {
+            query.prepare("INSERT INTO user_" + QString::number(table_id) + " (question, parentId)"
+                                                                            "VALUES (?, ?)");
+            query.addBindValue(question);
+            query.addBindValue(parent_id);
+        }
+        if(!query.exec()) {
+            qDebug() << "Error in SqlTreeModel::addRow:" << query.lastError().text();
+            query.finish();
+            db.close();
+            QSqlDatabase::removeDatabase("connection_name");
+            return -1;
+        }
+
+        query.exec("SELECT * FROM user_" + QString::number(table_id));
+        while(query.next()) {
+            ++row;
+        }
+
+        query.finish();
+        db.close();
     }
-    if(!query.exec())
-        qDebug() << "Error in SqlTreeModel::addRow:" << query.lastError().text();
+    // QSqlDatabase::removeDatabase("connection_name");
+
+    return row;
 }
 
+#define FOR_TEST true
 
 void fillUserTable(int table_id)
 {
-    queryInsertRow(table_id, 0, "Чего хочешь?", nullptr);
+    int start = queryInsertRow(table_id, 0, "Начало", nullptr);
+    int what_you_want = queryInsertRow(table_id, start, "Чего хочешь?", nullptr);
+    int where_to_go = queryInsertRow(table_id, start, "Куда пойти?", nullptr);
 
+    // ===============================================================
+    // What you want?
     QPixmap *image = new QPixmap(":/what_you_want/base_questions/what_you_want/drink.jpg");
-    queryInsertRow(table_id, 1, "Пить", image);
+    queryInsertRow(table_id, what_you_want, "Пить", image);
     delete image;
 
     image = new QPixmap(":/what_you_want/base_questions/what_you_want/eat.jpg");
-    queryInsertRow(table_id, 1, "Есть", image);
+    int eat = queryInsertRow(table_id, what_you_want, "Есть", image);
     delete image;
 
     image = new QPixmap(":/what_you_want/base_questions/what_you_want/wc.jpg");
-    queryInsertRow(table_id, 1, "В туалет", image);
+    queryInsertRow(table_id, what_you_want, "В туалет", image);
     delete image;
-
+#if FOR_TEST
     image = new QPixmap(":/what_you_want/base_questions/what_you_want/sleep.jpg");
-    queryInsertRow(table_id, 1, "Спать", image);
+    queryInsertRow(table_id, what_you_want, "Спать", image);
     delete image;
 
     image = new QPixmap(":/what_you_want/base_questions/what_you_want/lie.jpg");
-    queryInsertRow(table_id, 1, "Лечь", image);
+    queryInsertRow(table_id, what_you_want, "Лечь", image);
     delete image;
 
     image = new QPixmap(":/what_you_want/base_questions/what_you_want/sit.jpg");
-    queryInsertRow(table_id, 1, "Сесть", image);
+    queryInsertRow(table_id, what_you_want, "Сесть", image);
     delete image;
 
     image = new QPixmap(":/what_you_want/base_questions/what_you_want/stand.jpg");
-    queryInsertRow(table_id, 1, "Встать", image);
+    queryInsertRow(table_id, what_you_want, "Встать", image);
     delete image;
 
     image = new QPixmap(":/what_you_want/base_questions/what_you_want/watch_tv.jpg");
-    queryInsertRow(table_id, 1, "Посмотреть телевизор", image);
+    queryInsertRow(table_id, what_you_want, "Посмотреть телевизор", image);
     delete image;
 
     image = new QPixmap(":/what_you_want/base_questions/what_you_want/pressure.jpg");
-    queryInsertRow(table_id, 1, "Измерить давление", image);
+    queryInsertRow(table_id, what_you_want, "Измерить давление", image);
     delete image;
 
     image = new QPixmap(":/what_you_want/base_questions/what_you_want/pills.jpg");
-    queryInsertRow(table_id, 1, "Выпить лекарство", image);
+    queryInsertRow(table_id, what_you_want, "Выпить лекарство", image);
     delete image;
 
     image = new QPixmap(":/what_you_want/base_questions/what_you_want/brush_teeth.jpg");
-    queryInsertRow(table_id, 1, "Почистить зубы", image);
+    queryInsertRow(table_id, what_you_want, "Почистить зубы", image);
     delete image;
 
     image = new QPixmap(":/what_you_want/base_questions/what_you_want/wash_face.jpg");
-    queryInsertRow(table_id, 1, "Умыться", image);
+    queryInsertRow(table_id, what_you_want, "Умыться", image);
     delete image;
 
     image = new QPixmap(":/what_you_want/base_questions/what_you_want/shower.jpg");
-    queryInsertRow(table_id, 1, "Принять душ", image);
+    queryInsertRow(table_id, what_you_want, "Принять душ", image);
     delete image;
 
     image = new QPixmap(":/what_you_want/base_questions/what_you_want/shave.jpg");
-    queryInsertRow(table_id, 1, "Побриться", image);
+    queryInsertRow(table_id, what_you_want, "Побриться", image);
     delete image;
 
     image = new QPixmap(":/what_you_want/base_questions/what_you_want/take_bath.jpg");
-    queryInsertRow(table_id, 1, "Принять ванну", image);
+    queryInsertRow(table_id, what_you_want, "Принять ванну", image);
     delete image;
 
     image = new QPixmap(":/what_you_want/base_questions/what_you_want/undress.jpg");
-    queryInsertRow(table_id, 1, "Раздеться", image);
+    queryInsertRow(table_id, what_you_want, "Раздеться", image);
     delete image;
 
     image = new QPixmap(":/what_you_want/base_questions/what_you_want/get_dressed.jpg");
-    queryInsertRow(table_id, 1, "Одеться", image);
+    queryInsertRow(table_id, what_you_want, "Одеться", image);
     delete image;
 
     image = new QPixmap(":/what_you_want/base_questions/what_you_want/comb_hair.jpg");
-    queryInsertRow(table_id, 1, "Причесаться", image);
+    queryInsertRow(table_id, what_you_want, "Причесаться", image);
     delete image;
 
     image = new QPixmap(":/what_you_want/base_questions/what_you_want/haircut.jpg");
-    queryInsertRow(table_id, 1, "Подстричься", image);
+    queryInsertRow(table_id, what_you_want, "Подстричься", image);
     delete image;
+#endif
+    // ===============================================================
+    // Eat
+    // Potato
+    int potato = queryInsertRow(table_id, eat, "Блюда из картофеля", nullptr);
+
+    image = new QPixmap(":/base_questions/potato/1.jpg");
+    queryInsertRow(table_id, potato, "Отварной картофель", image);
+    delete image;
+
+    image = new QPixmap(":/base_questions/potato/2.jpg");
+    queryInsertRow(table_id, potato, "Жареный картофель", image);
+    delete image;
+
+    image = new QPixmap(":/base_questions/potato/3.jpg");
+    queryInsertRow(table_id, potato, "Пюре", image);
+    delete image;
+
+    // ===============================================================
+    // Eat
+    // Mushrooms
+    int mushrooms = queryInsertRow(table_id, eat, "Блюда из грибов", nullptr);
+
+    image = new QPixmap(":/base_questions/mushroom/salt.jpg");
+    queryInsertRow(table_id, mushrooms, "Соленые", image);
+    delete image;
+
+    image = new QPixmap(":/base_questions/mushroom/marinated.jpg");
+    queryInsertRow(table_id, mushrooms, "Маринованные", image);
+    delete image;
+
+    image = new QPixmap(":/base_questions/mushroom/fried.jpg");
+    queryInsertRow(table_id, mushrooms, "Жареные", image);
+    delete image;
+
+    image = new QPixmap(":/base_questions/mushroom/dried.jpg");
+    queryInsertRow(table_id, mushrooms, "Сушеные", image);
+    delete image;
+
+    image = new QPixmap(":/base_questions/mushroom/soup.jpg");
+    queryInsertRow(table_id, mushrooms, "Грибной суп", image);
+    delete image;
+
+    image = new QPixmap(":/base_questions/mushroom/cake.jpg");
+    queryInsertRow(table_id, mushrooms, "Пирог с грибами", image);
+    delete image;
+
+    // ===============================================================
+    // Eat
+    // Breakfast
+    int breakfast = queryInsertRow(table_id, eat, "Завтрак", nullptr);
+
+    image = new QPixmap(":/base_questions/breakfast/cottage_cheese.jpg");
+    queryInsertRow(table_id, breakfast, "Творог", image);
+    delete image;
+
+    image = new QPixmap(":/base_questions/breakfast/fried_eggs.jpg");
+    queryInsertRow(table_id, breakfast, "Яичница", image);
+    delete image;
+
+    image = new QPixmap(":/base_questions/breakfast/fried_sausage.jpg");
+    queryInsertRow(table_id, breakfast, "Жареная колбаса", image);
+    delete image;
+
+    image = new QPixmap(":/base_questions/breakfast/pancakes.jpg");
+    queryInsertRow(table_id, breakfast, "Оладьи", image);
+    delete image;
+
+    image = new QPixmap(":/base_questions/breakfast/porridge.jpg");
+    queryInsertRow(table_id, breakfast, "Каша", image);
+    delete image;
+
+    image = new QPixmap(":/base_questions/breakfast/salad.jpg");
+    queryInsertRow(table_id, breakfast, "Салат", image);
+    delete image;
+
+    image = new QPixmap(":/base_questions/breakfast/sandwiches.jpg");
+    queryInsertRow(table_id, breakfast, "Бутерброды", image);
+    delete image;
+
+    image = new QPixmap(":/base_questions/breakfast/sausages.jpg");
+    queryInsertRow(table_id, breakfast, "Сосиски", image);
+    delete image;
+
+    // ===============================================================
+    // Where to go?
+    image = new QPixmap(":/base_questions/where_to_go/cinema.jpg");
+    queryInsertRow(table_id, where_to_go, "В кинотеатр", image);
+    delete image;
+
+    image = new QPixmap(":/base_questions/where_to_go/circus.jpg");
+    queryInsertRow(table_id, where_to_go, "В цирк", image);
+    delete image;
+
+    image = new QPixmap(":/base_questions/where_to_go/doctor.jpg");
+    queryInsertRow(table_id, where_to_go, "К доктору", image);
+    delete image;
+
+    image = new QPixmap(":/base_questions/where_to_go/drink.jpg");
+    queryInsertRow(table_id, where_to_go, "Пить", image);
+    delete image;
+
+#if FOR_TEST
+    image = new QPixmap(":/base_questions/where_to_go/eat.jpg");
+    queryInsertRow(table_id, where_to_go, "Есть", image);
+    delete image;
+
+    image = new QPixmap(":/base_questions/where_to_go/fishing.jpg");
+    queryInsertRow(table_id, where_to_go, "На рыбалку", image);
+    delete image;
+
+    image = new QPixmap(":/base_questions/where_to_go/guests.jpg");
+    queryInsertRow(table_id, where_to_go, "В гости", image);
+    delete image;
+
+    image = new QPixmap(":/base_questions/where_to_go/mushrooms.jpg");
+    queryInsertRow(table_id, where_to_go, "За грибами", image);
+    delete image;
+
+    image = new QPixmap(":/base_questions/where_to_go/read.jpg");
+    queryInsertRow(table_id, where_to_go, "Читать", image);
+    delete image;
+
+    image = new QPixmap(":/base_questions/where_to_go/shop.jpg");
+    queryInsertRow(table_id, where_to_go, "В магазин", image);
+    delete image;
+
+    image = new QPixmap(":/base_questions/where_to_go/sleep.jpg");
+    queryInsertRow(table_id, where_to_go, "Спать", image);
+    delete image;
+
+    image = new QPixmap(":/base_questions/where_to_go/theater.jpg");
+    queryInsertRow(table_id, where_to_go, "Театр", image);
+    delete image;
+
+    image = new QPixmap(":/base_questions/where_to_go/walk.jpg");
+    queryInsertRow(table_id, where_to_go, "Гулять", image);
+    delete image;
+
+    image = new QPixmap(":/base_questions/where_to_go/watch_tv.jpg");
+    queryInsertRow(table_id, where_to_go, "Смотерть телевизор", image);
+    delete image;
+
+    image = new QPixmap(":/base_questions/where_to_go/work.jpg");
+    queryInsertRow(table_id, where_to_go, "На работу", image);
+    delete image;
+#endif
+    // ===============================================================
+    // Dacha
+    image = new QPixmap(":/base_questions/dacha/1.jpg");
+    int dacha = queryInsertRow(table_id, start, "Дача", image);
+    delete image;
+
+    image = new QPixmap(":/base_questions/dacha/2.jpg");
+    queryInsertRow(table_id, dacha, "Копать", image);
+    delete image;
+
+    image = new QPixmap(":/base_questions/dacha/3.jpg");
+    queryInsertRow(table_id, dacha, "Убирать траву", image);
+    delete image;
+
+    image = new QPixmap(":/base_questions/dacha/4.jpg");
+    queryInsertRow(table_id, dacha, "Делать грядки", image);
+    delete image;
+
+#if FOR_TEST
+    image = new QPixmap(":/base_questions/dacha/5.jpg");
+    queryInsertRow(table_id, dacha, "Обрезать кусты", image);
+    delete image;
+
+    image = new QPixmap(":/base_questions/dacha/6.jpg");
+    queryInsertRow(table_id, dacha, "Ремонтировать забор", image);
+    delete image;
+
+    image = new QPixmap(":/base_questions/dacha/7.jpg");
+    queryInsertRow(table_id, dacha, "Ремонтировать дом", image);
+    delete image;
+
+    image = new QPixmap(":/base_questions/dacha/8.jpg");
+    queryInsertRow(table_id, dacha, "Помидоры", image);
+    delete image;
+
+    image = new QPixmap(":/base_questions/dacha/9.jpg");
+    queryInsertRow(table_id, dacha, "Капуста", image);
+    delete image;
+
+    image = new QPixmap(":/base_questions/dacha/10.jpg");
+    queryInsertRow(table_id, dacha, "Огурцы", image);
+    delete image;
+
+    image = new QPixmap(":/base_questions/dacha/11.jpg");
+    queryInsertRow(table_id, dacha, "Баклажаны", image);
+    delete image;
+
+    image = new QPixmap(":/base_questions/dacha/12.jpg");
+    queryInsertRow(table_id, dacha, "Редис", image);
+    delete image;
+
+    image = new QPixmap(":/base_questions/dacha/13.jpg");
+    queryInsertRow(table_id, dacha, "Морковь", image);
+    delete image;
+
+    image = new QPixmap(":/base_questions/dacha/14.jpg");
+    queryInsertRow(table_id, dacha, "Свекла", image);
+    delete image;
+
+    image = new QPixmap(":/base_questions/dacha/15.jpg");
+    queryInsertRow(table_id, dacha, "Лук", image);
+    delete image;
+
+    image = new QPixmap(":/base_questions/dacha/16.jpg");
+    queryInsertRow(table_id, dacha, "Картофель", image);
+    delete image;
+
+    image = new QPixmap(":/base_questions/dacha/17.jpg");
+    queryInsertRow(table_id, dacha, "Петрушка", image);
+    delete image;
+
+    image = new QPixmap(":/base_questions/dacha/18.jpg");
+    queryInsertRow(table_id, dacha, "Укроп", image);
+    delete image;
+
+    image = new QPixmap(":/base_questions/dacha/19.jpg");
+    queryInsertRow(table_id, dacha, "Перцы", image);
+    delete image;
+
+    image = new QPixmap(":/base_questions/dacha/20.jpg");
+    queryInsertRow(table_id, dacha, "Персики", image);
+    delete image;
+
+    image = new QPixmap(":/base_questions/dacha/21.jpg");
+    queryInsertRow(table_id, dacha, "Яблони", image);
+    delete image;
+
+    image = new QPixmap(":/base_questions/dacha/22.jpg");
+    queryInsertRow(table_id, dacha, "Груши", image);
+    delete image;
+
+    image = new QPixmap(":/base_questions/dacha/23.jpg");
+    queryInsertRow(table_id, dacha, "Ранетка", image);
+    delete image;
+
+    image = new QPixmap(":/base_questions/dacha/24.jpg");
+    queryInsertRow(table_id, dacha, "Цветы", image);
+    delete image;
+
+    image = new QPixmap(":/base_questions/dacha/25.jpg");
+    queryInsertRow(table_id, dacha, "Лежать в кресле", image);
+    delete image;
+
+    image = new QPixmap(":/base_questions/dacha/26.jpg");
+    queryInsertRow(table_id, dacha, "Жарить шашлыки", image);
+    delete image;
+
+    image = new QPixmap(":/base_questions/dacha/27.jpg");
+    queryInsertRow(table_id, dacha, "Принимать гостей", image);
+    delete image;
+
+    image = new QPixmap(":/base_questions/dacha/28.jpg");
+    queryInsertRow(table_id, dacha, "Играть в футбол", image);
+    delete image;
+
+    image = new QPixmap(":/base_questions/dacha/29.jpg");
+    queryInsertRow(table_id, dacha, "Играть в волейбол", image);
+    delete image;
+
+    image = new QPixmap(":/base_questions/dacha/20.jpg");
+    queryInsertRow(table_id, dacha, "Играть в бадминтон", image);
+    delete image;
+
+    image = new QPixmap(":/base_questions/dacha/31.jpg");
+    queryInsertRow(table_id, dacha, "Купаться", image);
+    delete image;
+
+    image = new QPixmap(":/base_questions/dacha/32.jpg");
+    queryInsertRow(table_id, dacha, "Разводить костер", image);
+    delete image;
+#endif
 }
 
 
 bool MainWindow::CreateUserTable(int id)
 {
+    bool ok = false;
     QString tablename = "user_" + QString::number(id);
     if(userTableIsExist(tablename)) {
         return true;
     }
 
-    QSqlQuery query(SecondLayoutWindow::db);
-    query.prepare("CREATE TABLE " + tablename + " ("
-                  "id INTEGER PRIMARY KEY, "
-                  "question TEXT, "
-                  "image BLOB, "
-                  "parentId  INT);");
-    if(!query.exec()) {
-        qDebug() << "Create User's questions table failed: " << query.lastError().text();
-        return false;
+    {
+        QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE", "connection_name");
+        db.setDatabaseName("ImagineTalkDB.db");
+        db.open();
+
+        QSqlQuery query(db);
+        query.prepare("CREATE TABLE " + tablename + " ("
+                                                    "id INTEGER PRIMARY KEY, "
+                                                    "question TEXT, "
+                                                    "image BLOB, "
+                                                    "parentId  INT);");
+        if(!query.exec()) {
+            qDebug() << "Create User's questions table failed: " << query.lastError().text();
+        } else {
+            fillUserTable(id);
+            ok = true;
+        }
+        query.finish();
+        db.close();
     }
-    fillUserTable(id);
-    return true;
+    QSqlDatabase::removeDatabase("connection_name");
+
+    return ok;
 }
 
 
 bool MainWindow::userTableIsExist(QString tablename)
 {
-    QSqlRecord table_of_user = SecondLayoutWindow::db.record(tablename);
-    if(table_of_user.isEmpty()) {
-        return false;
-    } else {
-        return true;
+    bool ok = false;
+    {
+        QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE", "connection_name");
+        db.setDatabaseName("ImagineTalkDB.db");
+        db.open();
+
+        QSqlRecord table_of_user = db.record(tablename);
+        if(!table_of_user.isEmpty()) {
+            ok = true;
+        }
+        db.close();
     }
+    QSqlDatabase::removeDatabase("connection_name");
+    return ok;
 }
 
 
@@ -312,7 +648,16 @@ void MainWindow::goToMainWindow()
 void MainWindow::slotGoToMainWindow()
 {
     QString user = cbx_users->currentText();
-    int table_id = getUserTableId(user);
+    int table_id = -1;
+    {
+        QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE", "connection_name");
+        db.setDatabaseName("ImagineTalkDB.db");
+        db.open();
+        table_id = getUserTableId(user);
+        db.close();
+    }
+    QSqlDatabase::removeDatabase("connection_name");
+
     if(user.isEmpty())
     {
         QMessageBox msgBox;
@@ -330,15 +675,23 @@ void MainWindow::slotGoToMainWindow()
 
 int MainWindow::getUserTableId(QString &user)
 {
-    QSqlQuery q(SecondLayoutWindow::db);
-    q.prepare("SELECT table_number FROM Users WHERE user=?");
-    q.addBindValue(user);
-    q.exec();
-    if (q.first()) {
-        return q.value("table_number").toInt();
-    } else {
-        return -1;
+    int id = -1;
+    {
+        QSqlDatabase db = QSqlDatabase::database();
+
+        QSqlQuery q(db);
+        q.prepare("SELECT table_number FROM Users WHERE user=?");
+        q.addBindValue(user);
+        q.exec();
+        if (q.first()) {
+            id = q.value("table_number").toInt();
+        }
+
+        q.finish();
+        db.close();
     }
+
+    return id;
 }
 
 
@@ -357,9 +710,13 @@ void MainWindow::slotAddUser()
     QString username = dialog.textValue();
     if (!username.isEmpty())
     {
+        QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE", "connection_name");
+        db.setDatabaseName("ImagineTalkDB.db");
+        db.open();
+
         int table_id = createUserTableId();
         cbx_users->addItem(username);
-        QSqlQuery q(SecondLayoutWindow::db);
+        QSqlQuery q(db);
         q.prepare("INSERT INTO Users (user, table_number)"
                   "VALUES (?, ?)");
         q.addBindValue(username);
@@ -367,55 +724,89 @@ void MainWindow::slotAddUser()
         if(!q.exec()) {
             qDebug() << "Insert into Users failed:" << q.lastError().text();
         }
+
+        q.finish();
+        db.close();
     }
+    QSqlDatabase::removeDatabase("connection_name");
     cbx_users->setCurrentText(username);
 }
 
 
 int MainWindow::createUserTableId()
 {
-    QSqlQuery q(SecondLayoutWindow::db);
-    q.prepare("SELECT table_number FROM Users");
-    if(!q.exec()) {
-        qDebug() << "Error in createUserTableId:" << q.lastError().text();
+    int id = -1;
+    {
+        QSqlDatabase db = QSqlDatabase::database();
+        // db.setDatabaseName("ImagineTalkDB.db");
+        // db.open();
+
+        QSqlQuery q(db);
+        q.prepare("SELECT table_number FROM Users");
+        if(!q.exec()) {
+            qDebug() << "Error in createUserTableId:" << q.lastError().text();
+        }
+        QSet<int> set;
+        while (q.next()) {
+            set.insert(q.value("table_number").toInt());
+        }
+
+        q.finish();
+        db.close();
+
+        for(int i = 0; ; ++i) {
+            if(!set.contains(i)) {
+                id = i;
+                break;
+            }
+        }
     }
-    QSet<int> set;
-    while (q.next()) {
-        set.insert(q.value("table_number").toInt());
-    }
-    for(int i = 0; ; ++i) {
-        if(!set.contains(i))
-            return i;
-    }
-    return -1;
+    // QSqlDatabase::removeDatabase("connection_name");
+    return id;
 }
 
 
 void MainWindow::slotDeleteUser()
 {
-    QString username = cbx_users->currentText();
-    QString text = "Вы действительно хотите удалить пользователя " + username + " и все данные, связанные с ним?";
-    AcceptDialog dialog(text, this);
-    if (!dialog.exec())
-        return;
+    {
+        QString username = cbx_users->currentText();
+        QString text = "Вы действительно хотите удалить пользователя " + username + " и все данные, связанные с ним?";
+                           AcceptDialog dialog(text, this);
+        if (!dialog.exec())
+            return;
 
-    qDebug() << "deleting" << text;
+        qDebug() << "deleting" << text;
 
-    QSqlQuery q(SecondLayoutWindow::db);
+        QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE", "connection_name");
+        db.setDatabaseName("ImagineTalkDB.db");
+        db.open();
 
-    int table_id = getUserTableId(username);
-    q.prepare("DROP TABLE IF EXISTS user_" + QString::number(table_id));
-    if(!q.exec()) {
-        qDebug() << "Error in MainWindow::slotDeleteUser - Deleting table user_" + QString::number(table_id) + " from DB failed:" << q.lastError().text();
+        QSqlQuery q(db);
+
+        int table_id = getUserTableId(username);
+        q.prepare("DROP TABLE IF EXISTS user_" + QString::number(table_id));
+        if(!q.exec()) {
+            qDebug() << "Error in MainWindow::slotDeleteUser - Deleting table user_" + QString::number(table_id) + " from DB failed:" << q.lastError().text();
+            db.close();
+            QSqlDatabase::removeDatabase("connection_name");
+            return;
+        }
+
+        q.prepare("DELETE FROM Users WHERE user=?");
+        q.addBindValue(username);
+        if(!q.exec()) {
+            qDebug() << "Error in MainWindow::slotDeleteUser in query 'DELETE FROM Users WHERE user=':" << q.lastError().text();
+            db.close();
+            QSqlDatabase::removeDatabase("connection_name");
+            return;
+        }
+
+        q.finish();
+        db.close();
+
+        cbx_users->removeItem(cbx_users->findText(username));
     }
-
-    q.prepare("DELETE FROM Users WHERE user=?");
-    q.addBindValue(username);
-    if(!q.exec()) {
-        qDebug() << "Error in MainWindow::slotDeleteUser in query 'DELETE FROM Users WHERE user=':" << q.lastError().text();
-    }
-
-    cbx_users->removeItem(cbx_users->findText(username));
+    QSqlDatabase::removeDatabase("connection_name");
 }
 
 void MainWindow::slotGoUserSelection()

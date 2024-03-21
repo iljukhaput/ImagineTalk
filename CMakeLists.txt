@@ -47,7 +47,9 @@ else()
             addqadialog.h addqadialog.cpp
             filterproxymodel.h filterproxymodel.cpp
             acceptdialog.h acceptdialog.cpp
+            questionslistbtn.h questionslistbtn.cpp
             base_questions.qrc
+            rowbutton.h rowbutton.cpp
         )
     endif()
 endif()

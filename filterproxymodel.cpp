@@ -12,10 +12,21 @@ FilterProxyModel::FilterProxyModel(QString user, QObject *parent)
 
 bool FilterProxyModel::filterAcceptsRow(int sourceRow, const QModelIndex &sourceParent) const
 {
-    if( user == sourceModel()->index(sourceRow, 4, sourceParent).data().toString()) {
-        return true;
-    } else {
+    // if( user == sourceModel()->index(sourceRow, 4, sourceParent).data().toString()) {
+    //     return true;
+    // } else {
+    //     return false;
+    // }
+    return true;
+}
+
+
+bool FilterProxyModel::filterAcceptsColumn(int source_column, const QModelIndex &source_parent) const
+{
+    if(source_column == 2) {
         return false;
+    } else {
+        return true;
     }
 }
 

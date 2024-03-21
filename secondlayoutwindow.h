@@ -15,7 +15,7 @@ protected:
     int table_id;
     QPushButton *pb_home;
 public:
-    static QSqlDatabase db;
+    // static QSqlDatabase db;
     static bool initDB();
     static void closeDB();
     int getUserTableId();

@@ -4,7 +4,7 @@
 #include <QSqlError>
 #include <QSqlRecord>
 
-QSqlDatabase SecondLayoutWindow::db = QSqlDatabase::addDatabase("QSQLITE");
+// QSqlDatabase SecondLayoutWindow::db = QSqlDatabase::addDatabase("QSQLITE");
 
 SecondLayoutWindow::SecondLayoutWindow(QString &user, int table_id, QWidget *parent)
     : QWidget(parent), user(user), table_id(table_id)
@@ -22,52 +22,68 @@ void SecondLayoutWindow::ConnectPbHome(QSignalMapper &signal_mapper, QStackedWid
 
 bool SecondLayoutWindow::initDB()
 {
-    if(db.isOpen()) {
-        return true;
-    }
-    db.setDatabaseName("testDB.db");
+    bool ok = false;
+    {
+        QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE");
+        db.setDatabaseName("ImagineTalkDB.db");
+        if(db.open()) {
+            qDebug() << "Data base opened";
 
-    if(!db.open()) {
-        qDebug() << "open DB failed: " << db.lastError().text();
-        return false;
+            QSqlRecord table_users = db.record("Users");
+            if(!table_users.isEmpty()) {
+                ok = true;
+            } else {
+                QSqlQuery query(db);
+                query.prepare("CREATE TABLE Users (user TEXT, table_number INT);");
+                if(!query.exec()) {
+                    qDebug() << "Create table Users failed: " << query.lastError().text();
+                } else {
+                    ok = true;
+                }
+                query.finish();
+            }
+        } else {
+            qDebug() << "open DB failed: " << db.lastError().text();
+        }
+        db.close();
     }
 
-    qDebug() << "Data base opened";
+    QSqlDatabase::removeDatabase("connection_name");
 
-    QSqlRecord table_users = db.record("Users");
-    if(!table_users.isEmpty()) {
-        return true;
-    }
-
-    QSqlQuery query(db);
-    query.prepare("CREATE TABLE Users (user TEXT, table_number INT);");
-    if(!query.exec()) {
-        qDebug() << "Create table Users failed: " << query.lastError().text();
-        return false;
-    }
-    return true;
+    return ok;
 }
 
 
 void SecondLayoutWindow::closeDB()
 {
-    if(db.isOpen()) {
-        db.close();
-        qDebug() << "DB is closed";
-    }
+    // if(db.isOpen()) {
+    //     db.close();
+    //     qDebug() << "DB is closed";
+    // }
 }
 
 
 int SecondLayoutWindow::getUserTableId()
 {
-    QSqlQuery q(db);
-    q.prepare("SELECT table_number FROM Users WHERE user=?");
-    q.addBindValue(user);
-    q.exec();
-    if (q.first()) {
-        return q.value("table_number").toInt();
-    } else {
-        return -1;
+    int table_number = -1;
+    {
+        QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE", "connection_name");
+        db.setDatabaseName("ImagineTalkDB.db");
+        db.open();
+
+        QSqlQuery q(db);
+        q.prepare("SELECT table_number FROM Users WHERE user=?");
+        q.addBindValue(user);
+        q.exec();
+        if (q.first()) {
+            table_number = q.value("table_number").toInt();
+        }
+        q.finish();
+
+        db.close();
     }
+    QSqlDatabase::removeDatabase("connection_name");
+
+    return table_number;
 }
 

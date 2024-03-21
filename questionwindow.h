@@ -3,7 +3,7 @@
 
 #include "secondlayoutwindow.h"
 #include "sqltreemodel.h"
-// #include "filterproxymodel.h"
+#include "questionslistbtn.h"
 
 #include <QWidget>
 #include <QPushButton>
@@ -24,24 +24,20 @@ class QuestionWindow : public SecondLayoutWindow
 
     QPushButton *pb_add;
     QPushButton *pb_delete;
-    QPushButton *pb_expand;
+    // QPushButton *pb_expand;
 
-    QSqlTableModel *table_model;
-    SqlTreeModel *tree_model;
-    // FilterProxyModel *filter_model;
+    // QSqlTableModel *table_model;
+    // SqlTreeModel *tree_model;
 
-    // QTableView *table_view;
-    // QTableView *table_proxy_view;
-    QTreeView *tree_view;
+    // QTreeView *tree_view;
+    QuestionsListBtn *listbtn;
 
-    QLabel *selected_QA_image;
-    void initView();
+    QLabel *selected_lbl;
+    // void initView();
 public:
     explicit QuestionWindow(QString &user, int table_id, QWidget *parent = nullptr);
     ~QuestionWindow();
 private slots:
     void slotAddQuestionAnswer();
-    void slotDeleteQuestionAnswer();
-    void slotTreeViewClicked(QModelIndex id);
 };
 #endif // QUESTIONWINDOW_H

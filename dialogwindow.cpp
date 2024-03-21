@@ -17,7 +17,7 @@ DialogWindow::DialogWindow(QString &user, int table_id, QWidget *parent)
     , scale(1)
 {
     qDebug() << "Constructor DialogWindow - " << this; // --------------------------- DEBUG
-    stacked_widget_dialog = new QStackedWidget();
+    stacked_widget_dialog = new QStackedWidget(this);
 
     QFontMetrics fm(font());
     QString max_string("На главный экран"); // maximum length string
@@ -75,49 +75,54 @@ void DialogWindow::slotShowAnswers(int id)
 
 QScrollArea *DialogWindow::createQAWidget(int id)
 {
-    QSqlQuery *query = new QSqlQuery(db);
-    query->prepare("SELECT * FROM user_" + QString::number(table_id) + " WHERE parentId=?");
-    query->addBindValue(id);
-    query->exec();
-
-    QVBoxLayout *vboxlayout = new QVBoxLayout;
-    QHBoxLayout *hboxlayout = new QHBoxLayout;
-    int row_count = rowCount(query);
-    int counter = 0;
-    while(query->next())
-    {
-        QString question = query->value("question").toString();
-        QByteArray image = query->value("image").toByteArray();
-        AnswerWidget *pb = new AnswerWidget(question, scale, &image);
-        connectPbQuestion(pb, query->value("id").toInt());
-        if (row_count == 4) {
-            if (counter == 2) {
-                qDebug() << "NEW LAYOUT"; // --------------------------- DEBUG
-                vboxlayout->addLayout(hboxlayout);
-                hboxlayout = new QHBoxLayout;
-            }
-        } else {
-            if (counter % 3 == 0 && counter > 0) {
-                qDebug() << "NEW LAYOUT"; // --------------------------- DEBUG
-                vboxlayout->addLayout(hboxlayout);
-                hboxlayout = new QHBoxLayout;
-            }
-        }
-        hboxlayout->addWidget(pb);
-        counter++;
-        qDebug() << question; // --------------------------- DEBUG
-    }
-    delete query;
-
-    vboxlayout->addLayout(hboxlayout);
-
-    QWidget *wgt = new QWidget;
-    wgt->setLayout(vboxlayout);
-
     QScrollArea *scroll_area = new QScrollArea(this);
-    scroll_area->setWidget(wgt);
-    scroll_area->setAlignment(Qt::AlignCenter);
-    scroll_area->setWidgetResizable(true);
+    {
+        QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE", "connection_name");
+        db.setDatabaseName("ImagineTalkDB.db");
+        db.open();
+
+        QSqlQuery query(db);
+        query.prepare("SELECT * FROM user_" + QString::number(table_id) + " WHERE parentId=?");
+        query.addBindValue(id);
+        query.exec();
+
+        QVBoxLayout *vboxlayout = new QVBoxLayout;
+        QHBoxLayout *hboxlayout = new QHBoxLayout;
+        int row_count = rowCount(&query);
+        int counter = 0;
+        while(query.next())
+        {
+            QString question = query.value("question").toString();
+            QByteArray image = query.value("image").toByteArray();
+            AnswerWidget *pb = new AnswerWidget(question, scale, &image, this);
+            connectPbQuestion(pb, query.value("id").toInt());
+            if (row_count == 4) {
+                if (counter == 2) {
+                    vboxlayout->addLayout(hboxlayout);
+                    hboxlayout = new QHBoxLayout;
+                }
+            } else {
+                if (counter % 3 == 0 && counter > 0) {
+                    vboxlayout->addLayout(hboxlayout);
+                    hboxlayout = new QHBoxLayout;
+                }
+            }
+            hboxlayout->addWidget(pb);
+            counter++;
+        }
+        query.finish();
+        db.close();
+
+        vboxlayout->addLayout(hboxlayout);
+
+        QWidget *wgt = new QWidget;
+        wgt->setLayout(vboxlayout);
+
+        scroll_area->setWidget(wgt);
+        scroll_area->setAlignment(Qt::AlignCenter);
+        scroll_area->setWidgetResizable(true);
+    }
+    QSqlDatabase::removeDatabase("connection_name");
 
     return scroll_area;
 }
