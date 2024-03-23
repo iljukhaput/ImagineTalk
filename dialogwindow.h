@@ -24,13 +24,13 @@ class DialogWindow : public SecondLayoutWindow
     QScrollArea *createQAWidget(int index);
     void clearStackedWidget();
 public:
-    explicit DialogWindow(QString &user, int table_id, QWidget *parent = nullptr);
+    explicit DialogWindow(int table_id, QWidget *parent = nullptr);
     ~DialogWindow();
 
 private slots:
     void slotShowAnswers(int id);
     void slotGoToPreviousAnswer();
-    void slotClearStackedWidget();
+    void slotBackpath();
     void slotIncreaseImages();
     void slotDecreaseImages();
 public slots:

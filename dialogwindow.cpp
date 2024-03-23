@@ -12,8 +12,8 @@
 #include <QPushButton>
 #include <QStackedWidget>
 
-DialogWindow::DialogWindow(QString &user, int table_id, QWidget *parent)
-    : SecondLayoutWindow(user, table_id, parent)
+DialogWindow::DialogWindow(int table_id, QWidget *parent)
+    : SecondLayoutWindow(table_id, parent)
     , scale(1)
 {
     qDebug() << "Constructor DialogWindow - " << this; // --------------------------- DEBUG
@@ -27,7 +27,7 @@ DialogWindow::DialogWindow(QString &user, int table_id, QWidget *parent)
     QSize size_pb(width, height);
 
     pb_home->setFixedSize(size_pb);
-    connect(pb_home, SIGNAL(clicked()), this, SLOT(slotClearStackedWidget()));
+    connect(pb_home, SIGNAL(clicked()), this, SLOT(slotBackpath()));
 
     QPushButton *pb_back = new QPushButton("Назад");
     pb_back->setFixedSize(size_pb);
@@ -62,14 +62,10 @@ DialogWindow::~DialogWindow()
 
 void DialogWindow::slotShowAnswers(int id)
 {
-    qDebug() << "\n-- slotShowAnswers | id =" << id; // --------------------------- DEBUG
-
     backpath.append(id);
     QScrollArea *scroll_area = createQAWidget(id);
     stacked_widget_dialog->addWidget(scroll_area);
     stacked_widget_dialog->setCurrentWidget(scroll_area);
-
-    qDebug() << "-- slotShowAnswers - current index =" << stacked_widget_dialog->currentIndex(); // --------------------------- DEBUG
 }
 
 
@@ -171,17 +167,17 @@ void DialogWindow::slotGoToPreviousAnswer()
     int index = stacked_widget_dialog->currentIndex();
     if (index == 0)
         return;
+    QWidget *tmp = stacked_widget_dialog->currentWidget();
     stacked_widget_dialog->removeWidget(stacked_widget_dialog->currentWidget());
+    delete tmp;
     backpath.pop_back();
 }
 
 
-void DialogWindow::slotClearStackedWidget()
+void DialogWindow::slotBackpath()
 {
-    while(stacked_widget_dialog->count() != 0) {
-        stacked_widget_dialog->removeWidget(stacked_widget_dialog->currentWidget());
-        backpath.pop_back();
-    }
+    clearStackedWidget();
+    backpath.clear();
 }
 
 
@@ -203,6 +199,8 @@ void DialogWindow::slotShowInitialQuestion()
 void DialogWindow::clearStackedWidget()
 {
     while(stacked_widget_dialog->count() != 0) {
+        QWidget *tmp = stacked_widget_dialog->currentWidget();
         stacked_widget_dialog->removeWidget(stacked_widget_dialog->currentWidget());
+        delete tmp;
     }
 }

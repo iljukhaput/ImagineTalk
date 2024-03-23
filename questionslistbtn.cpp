@@ -8,13 +8,19 @@
 #include <QDebug>
 #include <QScrollBar>
 
-QuestionsListBtn::QuestionsListBtn(int table_id, QLabel *lbl, QWidget *parent)
-    : QScrollArea(parent), table_id(table_id), lbl(lbl), current_row(0)
+QuestionsListBtn::QuestionsListBtn(QString table_name, int table_id, QLabel *lbl, QWidget *parent)
+    : QScrollArea(parent), table_name(table_name), table_id(table_id), lbl(lbl), current_row(0)
 {
     setWidgetResizable(true);
     vbx_layout = new QVBoxLayout;
     vbx_layout->setAlignment(Qt::AlignTop);
     vbx_layout->setSpacing(0);
+
+
+    if (table_name == "user_")
+        db_name = "ImagineTalkDB.db";
+    else
+        db_name = "GeneralQuestionsDB.db";
 
     Expand(0);
     setStyleSheet("RowButton:hover { background: lightgrey; }"
@@ -44,11 +50,11 @@ void QuestionsListBtn::Expand(int sql_id)
         }
 
         QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE", "connection_name");
-        db.setDatabaseName("ImagineTalkDB.db");
+        db.setDatabaseName(db_name);
         db.open();
 
         QSqlQuery query(db);
-        query.prepare("SELECT * FROM user_" + QString::number(table_id) + " WHERE parentId=?");
+        query.prepare("SELECT * FROM " + table_name + QString::number(table_id) + " WHERE parentId=?");
         query.addBindValue(sql_id);
         query.exec();
         while (query.next()) {
@@ -84,30 +90,33 @@ void QuestionsListBtn::Expand(int sql_id)
 void QuestionsListBtn::addRow(const QString &question, const QByteArray *image)
 {
     int sql_id = getCurrent();
-    if (!sql_id)
-        return;
-    RowButton *current_btn = hash_visible_btns[sql_id];
+    int row_id = -1;
+    RowButton *current_btn = nullptr;
+    if (sql_id) {
+        current_btn = hash_visible_btns[sql_id];
+        if (!current_btn) {
+            return;
+        }
+        if(!current_btn->isExpanded()) {
+            Expand(sql_id);
+            current_btn->setExpanded(true);
+        }
 
-    if(!current_btn->isExpanded()) {
-        Expand(sql_id);
-        current_btn->setExpanded(true);
+        if (!current_btn->getExpandBtn()) {
+            current_btn = addExpandBtn(sql_id);
+        }
+        row_id = vbx_layout->indexOf(current_btn);
     }
-
-    if (!current_btn->getExpandBtn()) {
-        current_btn = addExpandBtn(sql_id);
-    }
-
     int child_sql_id = insertRowSql(sql_id, question, image);
     RowButton *child_rb = createChildRowButton(child_sql_id, question, current_btn);
-    int row_id = vbx_layout->indexOf(current_btn);
     vbx_layout->insertWidget(row_id+1, child_rb);
 }
 
 
 RowButton *QuestionsListBtn::createChildRowButton(int id_sql, const QString &text, RowButton *parent_btn)
 {
-
-    RowButton *child_rb = new RowButton(id_sql, table_id, text, parent_btn);
+    QString full_table_name = table_name + QString::number(table_id);
+    RowButton *child_rb = new RowButton(id_sql, full_table_name, text, parent_btn);
     hash_visible_btns[id_sql] = child_rb;
 
     QSignalMapper *signal_mapper_row = connectMapBtnId(child_rb, id_sql);
@@ -183,11 +192,11 @@ void QuestionsListBtn::setImage(int sql_id)
 {
     {
         QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE", "connection_name");
-        db.setDatabaseName("ImagineTalkDB.db");
+        db.setDatabaseName(db_name);
         db.open();
 
         QSqlQuery query(db);
-        query.prepare("SELECT * FROM user_" + QString::number(table_id) + " WHERE id=?");
+        query.prepare("SELECT * FROM " + table_name + QString::number(table_id) + " WHERE id=?");
         query.addBindValue(sql_id);
         if(query.exec()) {
             query.first();
@@ -217,13 +226,13 @@ void QuestionsListBtn::slotDelete()
     RowButton *parent_btn = hash_visible_btns[id]->getParentBtn();
 
     deleteWidgetRows(id);
-
     {
         QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE", "connection_name");
-        db.setDatabaseName("ImagineTalkDB.db");
-        db.open();
-        deleteDBRecords(id);
-        db.close();
+        db.setDatabaseName(db_name);
+        if (db.open()) {
+            deleteDBRecords(id);
+            db.close();
+        }
     }
     QSqlDatabase::removeDatabase("connection_name");
 
@@ -285,14 +294,17 @@ void QuestionsListBtn::deleteWidgetRows(int sql_id)
 }
 
 
+/*
+ * Так как функция рекурсивная, подключение к базе происходит перед вызовом этой функции
+ */
 void QuestionsListBtn::deleteDBRecords(int sql_id)
 {
     QSqlDatabase db = QSqlDatabase::database();
     QSqlQuery q(db);
-    q.prepare("SELECT id FROM user_" + QString::number(table_id) + " WHERE parentId=?");
+    q.prepare("SELECT id FROM " + table_name + QString::number(table_id) + " WHERE parentId=?");
     q.addBindValue(sql_id);
     if(!q.exec()) {
-        qDebug() << "QuestionsListBtn::deleteDBRecords:" << q.lastError().text();
+        qDebug() << "Error in QuestionsListBtn::deleteDBRecords:" << q.lastError().text();
     }
     while (q.next()) {
         int child_id = q.value("id").toInt();
@@ -307,10 +319,10 @@ void QuestionsListBtn::deleteOneRow(int sql_id)
 {
     QSqlDatabase db = QSqlDatabase::database();
     QSqlQuery q(db);
-    q.prepare("DELETE FROM user_" + QString::number(table_id) + " WHERE id=?");
+    q.prepare("DELETE FROM " + table_name + QString::number(table_id) + " WHERE id=?");
     q.addBindValue(sql_id);
     if(!q.exec()) {
-        qDebug() << "Error in SqlTreeModel::deleteOneRow:" << q.lastError().text();
+        qDebug() << "Error in QuestionsListBtn::deleteOneRow:" << q.lastError().text();
     }
     q.finish();
 }
@@ -321,31 +333,31 @@ int QuestionsListBtn::insertRowSql(int parent_id, const QString &question, const
     int row_id = -1;
     {
         QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE", "connection_name");
-        db.setDatabaseName("ImagineTalkDB.db");
+        db.setDatabaseName(db_name);
         db.open();
 
         QSqlQuery query(db);
         if(image) {
-            query.prepare("INSERT INTO user_" + QString::number(table_id) + " (question, image, parentId)"
+            query.prepare("INSERT INTO " + table_name + QString::number(table_id) + " (question, image, parentId)"
                                                                             "VALUES (?, ?, ?)");
             query.addBindValue(question);
             query.addBindValue(*image);
             query.addBindValue(parent_id);
         } else {
-            query.prepare("INSERT INTO user_" + QString::number(table_id) + " (question, parentId)"
+            query.prepare("INSERT INTO " + table_name + QString::number(table_id) + " (question, parentId)"
                                                                             "VALUES (?, ?)");
             query.addBindValue(question);
             query.addBindValue(parent_id);
         }
         if(!query.exec())
-            qDebug() << "Error in SqlTreeModel::addRow:" << query.lastError().text();
+            qDebug() << "Error in QuestionsListBtn::insertRowSql:" << query.lastError().text();
 
 
-        query.prepare("SELECT id FROM user_" + QString::number(table_id) + " WHERE question=? AND parentId=?");
+        query.prepare("SELECT id FROM " + table_name + QString::number(table_id) + " WHERE question=? AND parentId=?");
         query.addBindValue(question);
         query.addBindValue(parent_id);
         if(!query.exec()) {
-            qDebug() << "Error in SqlTreeModel::addRow:" << query.lastError().text();
+            qDebug() << "Error in QuestionsListBtn::insertRowSql:" << query.lastError().text();
         } else {
             query.last();
             row_id = query.value("id").toInt();

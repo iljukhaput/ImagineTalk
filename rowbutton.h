@@ -16,17 +16,21 @@ public:
 class RowButton : public QPushButton
 {
     Q_OBJECT
+
     int sql_id;
+    QString table_name;
     QString question;
+    RowButton* parent_btn;
+
     bool expanded;
     int level;
-    int table_id;
-    RowButton* parent_btn;
+    // int table_id;
+    QString db_name;
     ExpandButton *expand_btn;
     QList<RowButton*> children_list;
     QString createPrefix(int level);
 public:
-    RowButton(int id, int table_id, const QString &text, RowButton* parent_btn, QWidget *parent = nullptr);
+    RowButton(int sql_id, QString table_name, const QString &text, RowButton* parent_btn, QWidget *parent = nullptr);
     bool isExpanded() const { return expanded; }
     int getId() const { return sql_id; }
     QString getQuestion() const { return question; }

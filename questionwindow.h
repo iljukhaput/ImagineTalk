@@ -2,7 +2,6 @@
 #define QUESTIONWINDOW_H
 
 #include "secondlayoutwindow.h"
-#include "sqltreemodel.h"
 #include "questionslistbtn.h"
 
 #include <QWidget>
@@ -24,18 +23,10 @@ class QuestionWindow : public SecondLayoutWindow
 
     QPushButton *pb_add;
     QPushButton *pb_delete;
-    // QPushButton *pb_expand;
-
-    // QSqlTableModel *table_model;
-    // SqlTreeModel *tree_model;
-
-    // QTreeView *tree_view;
     QuestionsListBtn *listbtn;
-
     QLabel *selected_lbl;
-    // void initView();
 public:
-    explicit QuestionWindow(QString &user, int table_id, QWidget *parent = nullptr);
+    explicit QuestionWindow(QString username, int table_id, QWidget *parent = nullptr);
     ~QuestionWindow();
 private slots:
     void slotAddQuestionAnswer();

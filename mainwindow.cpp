@@ -17,12 +17,13 @@
 #include <QSqlRecord>
 #include <QByteArray>
 #include <QBuffer>
+#include <QProgressDialog>
 
 
 MainWindow::MainWindow(QWidget *parent)
-    : QMainWindow(parent)
+    : QMainWindow(parent), wgt_questions_setup(nullptr)
 {
-    if(!SecondLayoutWindow::initDB()) {
+    if(!CreateUsersTable()) {
         qDebug() << "Data base is not open";
     }
     stacked_widget_main = new QStackedWidget(this);
@@ -30,14 +31,8 @@ MainWindow::MainWindow(QWidget *parent)
     CreateChooseUserWindow();
 
     setCentralWidget(stacked_widget_main);
-    setGeometry(200, 200, 1150, 550);
+    setGeometry(200, 100, 1150, 650);
 }
-
-MainWindow::~MainWindow()
-{
-    SecondLayoutWindow::closeDB();
-}
-
 
 void MainWindow::CreateMainWindow(QString &user)
 {
@@ -107,6 +102,15 @@ void MainWindow::CreateChooseUserWindow()
     pb_delete_user->setFixedSize(size_pb);
     connect(pb_delete_user, SIGNAL (clicked()), this, SLOT(slotDeleteUser()));
 
+    /* При клике на кнопку:
+     *      - создать QuestionWindow
+     *      - добавить его в stqcked_widget_main
+     *      - сделать его currentWidget
+     */
+    pb_general_questions = new QPushButton("Общие вопросы");
+    pb_general_questions->setFixedSize(size_pb);
+    connect(pb_general_questions, SIGNAL (clicked()), this, SLOT(slotGeneralQuestions()));
+
     QPushButton *pb_quit = new QPushButton("Выйти");
     pb_quit->setFixedSize(size_pb);
     connect(pb_quit, SIGNAL (clicked()), QApplication::instance(), SLOT(quit()));
@@ -116,6 +120,7 @@ void MainWindow::CreateChooseUserWindow()
     vbx_layout->addWidget(pb_ok);
     vbx_layout->addWidget(pb_add_user);
     vbx_layout->addWidget(pb_delete_user);
+    vbx_layout->addWidget(pb_general_questions);
     vbx_layout->addWidget(pb_quit);
     vbx_layout->setSpacing(5);
     vbx_layout->setAlignment(Qt::AlignCenter);
@@ -148,54 +153,51 @@ void MainWindow::FillComboBox(QComboBox &cbx)
 int queryInsertRow(int table_id, int parent_id, const QString &question, QPixmap *image)
 {
     int row = 0;
-    {
-        QSqlDatabase db = QSqlDatabase::database();
-        // db.setDatabaseName("ImagineTalkDB.db");
-        // db.open();
+    QSqlDatabase db = QSqlDatabase::database();
 
-        QSqlQuery query(db);
-        if(image) {
-            QByteArray byte_array;
-            QBuffer in_buffer(&byte_array);
-            in_buffer.open(QIODevice::WriteOnly);
-            image->save(&in_buffer, "PNG");
+    QSqlQuery query(db);
+    if(image) {
+        QByteArray byte_array;
+        QBuffer in_buffer(&byte_array);
+        in_buffer.open(QIODevice::WriteOnly);
+        image->save(&in_buffer, "PNG");
 
-            query.prepare("INSERT INTO user_" + QString::number(table_id) + " (question, image, parentId)"
-                                                                            "VALUES (?, ?, ?)");
-            query.addBindValue(question);
-            query.addBindValue(byte_array);
-            query.addBindValue(parent_id);
-        } else {
-            query.prepare("INSERT INTO user_" + QString::number(table_id) + " (question, parentId)"
-                                                                            "VALUES (?, ?)");
-            query.addBindValue(question);
-            query.addBindValue(parent_id);
-        }
-        if(!query.exec()) {
-            qDebug() << "Error in SqlTreeModel::addRow:" << query.lastError().text();
-            query.finish();
-            db.close();
-            QSqlDatabase::removeDatabase("connection_name");
-            return -1;
-        }
-
-        query.exec("SELECT * FROM user_" + QString::number(table_id));
-        while(query.next()) {
-            ++row;
-        }
-
+        query.prepare("INSERT INTO user_" + QString::number(table_id) + " (question, image, parentId)"
+                                                                        "VALUES (?, ?, ?)");
+        query.addBindValue(question);
+        query.addBindValue(byte_array);
+        query.addBindValue(parent_id);
+    } else {
+        query.prepare("INSERT INTO user_" + QString::number(table_id) + " (question, parentId)"
+                                                                        "VALUES (?, ?)");
+        query.addBindValue(question);
+        query.addBindValue(parent_id);
+    }
+    if(!query.exec()) {
+        qDebug() << "Error in SqlTreeModel::addRow:" << query.lastError().text();
         query.finish();
         db.close();
+        QSqlDatabase::removeDatabase("connection_name");
+        return -1;
     }
-    // QSqlDatabase::removeDatabase("connection_name");
+
+    query.exec("SELECT * FROM user_" + QString::number(table_id));
+    while(query.next()) {
+        ++row;
+    }
+
+    query.finish();
+    db.close();
 
     return row;
 }
 
 #define FOR_TEST true
 
-void fillUserTable(int table_id)
+void fillGeneralTable(int table_id, MainWindow *mw)
 {
+    QProgressDialog progress("Создание базы данных пользователя...", "Отменить", 0, 10);
+
     int start = queryInsertRow(table_id, 0, "Начало", nullptr);
     int what_you_want = queryInsertRow(table_id, start, "Чего хочешь?", nullptr);
     int where_to_go = queryInsertRow(table_id, start, "Куда пойти?", nullptr);
@@ -234,6 +236,8 @@ void fillUserTable(int table_id)
     queryInsertRow(table_id, what_you_want, "Посмотреть телевизор", image);
     delete image;
 
+    progress.setValue(1);
+
     image = new QPixmap(":/what_you_want/base_questions/what_you_want/pressure.jpg");
     queryInsertRow(table_id, what_you_want, "Измерить давление", image);
     delete image;
@@ -270,6 +274,8 @@ void fillUserTable(int table_id)
     queryInsertRow(table_id, what_you_want, "Одеться", image);
     delete image;
 
+    progress.setValue(2);
+
     image = new QPixmap(":/what_you_want/base_questions/what_you_want/comb_hair.jpg");
     queryInsertRow(table_id, what_you_want, "Причесаться", image);
     delete image;
@@ -299,6 +305,8 @@ void fillUserTable(int table_id)
     // Eat
     // Mushrooms
     int mushrooms = queryInsertRow(table_id, eat, "Блюда из грибов", nullptr);
+
+    progress.setValue(3);
 
     image = new QPixmap(":/base_questions/mushroom/salt.jpg");
     queryInsertRow(table_id, mushrooms, "Соленые", image);
@@ -332,6 +340,8 @@ void fillUserTable(int table_id)
     image = new QPixmap(":/base_questions/breakfast/cottage_cheese.jpg");
     queryInsertRow(table_id, breakfast, "Творог", image);
     delete image;
+
+    progress.setValue(4);
 
     image = new QPixmap(":/base_questions/breakfast/fried_eggs.jpg");
     queryInsertRow(table_id, breakfast, "Яичница", image);
@@ -367,6 +377,8 @@ void fillUserTable(int table_id)
     queryInsertRow(table_id, where_to_go, "В кинотеатр", image);
     delete image;
 
+    progress.setValue(5);
+
     image = new QPixmap(":/base_questions/where_to_go/circus.jpg");
     queryInsertRow(table_id, where_to_go, "В цирк", image);
     delete image;
@@ -399,6 +411,8 @@ void fillUserTable(int table_id)
     image = new QPixmap(":/base_questions/where_to_go/read.jpg");
     queryInsertRow(table_id, where_to_go, "Читать", image);
     delete image;
+
+    progress.setValue(6);
 
     image = new QPixmap(":/base_questions/where_to_go/shop.jpg");
     queryInsertRow(table_id, where_to_go, "В магазин", image);
@@ -434,6 +448,8 @@ void fillUserTable(int table_id)
     queryInsertRow(table_id, dacha, "Копать", image);
     delete image;
 
+    progress.setValue(7);
+
     image = new QPixmap(":/base_questions/dacha/3.jpg");
     queryInsertRow(table_id, dacha, "Убирать траву", image);
     delete image;
@@ -467,6 +483,8 @@ void fillUserTable(int table_id)
     queryInsertRow(table_id, dacha, "Огурцы", image);
     delete image;
 
+    progress.setValue(8);
+
     image = new QPixmap(":/base_questions/dacha/11.jpg");
     queryInsertRow(table_id, dacha, "Баклажаны", image);
     delete image;
@@ -498,6 +516,8 @@ void fillUserTable(int table_id)
     image = new QPixmap(":/base_questions/dacha/18.jpg");
     queryInsertRow(table_id, dacha, "Укроп", image);
     delete image;
+
+    progress.setValue(9);
 
     image = new QPixmap(":/base_questions/dacha/19.jpg");
     queryInsertRow(table_id, dacha, "Перцы", image);
@@ -543,6 +563,8 @@ void fillUserTable(int table_id)
     queryInsertRow(table_id, dacha, "Играть в волейбол", image);
     delete image;
 
+    progress.setValue(10);
+
     image = new QPixmap(":/base_questions/dacha/20.jpg");
     queryInsertRow(table_id, dacha, "Играть в бадминтон", image);
     delete image;
@@ -555,35 +577,47 @@ void fillUserTable(int table_id)
     queryInsertRow(table_id, dacha, "Разводить костер", image);
     delete image;
 #endif
+    progress.close();
 }
 
-
-bool MainWindow::CreateUserTable(int id)
+/* В зависимости от имени таблицы, определяем к какой БД будем подключаться,
+ * проверяем, существует ли уже такая таблица,
+ *      если нет, то создаем
+ *          и если эта таблица - пользовательская,
+ *          то заполняем её данными из таблица общих вопросов
+ */
+bool MainWindow::CreateQuestionsTable(QString table_name, int id)
 {
     bool ok = false;
-    QString tablename = "user_" + QString::number(id);
-    if(userTableIsExist(tablename)) {
-        return true;
+    QString full_table_name = table_name + QString::number(id);
+    QString db_name = "ImagineTalkDB.db";
+    if (full_table_name == "general_0"){
+        db_name = "GeneralQuestionsDB.db";
     }
 
     {
         QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE", "connection_name");
-        db.setDatabaseName("ImagineTalkDB.db");
+        db.setDatabaseName(db_name);
         db.open();
 
-        QSqlQuery query(db);
-        query.prepare("CREATE TABLE " + tablename + " ("
-                                                    "id INTEGER PRIMARY KEY, "
-                                                    "question TEXT, "
-                                                    "image BLOB, "
-                                                    "parentId  INT);");
-        if(!query.exec()) {
-            qDebug() << "Create User's questions table failed: " << query.lastError().text();
-        } else {
-            fillUserTable(id);
-            ok = true;
+        QSqlRecord table = db.record(full_table_name);
+        if(table.isEmpty()){
+            QSqlQuery query(db);
+            query.prepare("CREATE TABLE " + full_table_name + " ("
+                                                              "id INTEGER PRIMARY KEY, "
+                                                              "question TEXT, "
+                                                              "image BLOB, "
+                                                              "parentId INT);");
+            if(!query.exec()) {
+                qDebug() << "Create User's questions table failed: " << query.lastError().text();
+            } else {
+                if (full_table_name != "general_0") {
+                    FillUserTable(full_table_name);
+                }
+                ok = true;
+            }
+            query.finish();
         }
-        query.finish();
         db.close();
     }
     QSqlDatabase::removeDatabase("connection_name");
@@ -592,39 +626,63 @@ bool MainWindow::CreateUserTable(int id)
 }
 
 
-bool MainWindow::userTableIsExist(QString tablename)
+void MainWindow::FillUserTable(QString full_table_name)
 {
-    bool ok = false;
     {
-        QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE", "connection_name");
-        db.setDatabaseName("ImagineTalkDB.db");
-        db.open();
-
-        QSqlRecord table_of_user = db.record(tablename);
-        if(!table_of_user.isEmpty()) {
-            ok = true;
+        QSqlDatabase general_db = QSqlDatabase::addDatabase("QSQLITE", "connection_general");
+        general_db.setDatabaseName("GeneralQuestionsDB.db");
+        if (!general_db.open()) {
+            qDebug() << "Error in MainWindow::FillUserTable: cannot open GeneralQuestionsDB.db";
+            return;
         }
-        db.close();
+
+        QSqlDatabase user_db = QSqlDatabase::database("connection_name");
+
+        QSqlQuery q_to(user_db);
+        QSqlQuery q_from(general_db);
+        q_from.prepare("SELECT * FROM general_0;");
+        q_from.exec();
+        while (q_from.next()) {
+            q_to.prepare("INSERT INTO " + full_table_name + " (id, question, image, parentId) "
+                                                            "VALUES (?, ?, ?, ?)");
+            q_to.addBindValue(q_from.value("id").toInt());
+            q_to.addBindValue(q_from.value("question").toString());
+            q_to.addBindValue(q_from.value("image").toByteArray());
+            q_to.addBindValue(q_from.value("parentId").toInt());
+
+            qDebug() << q_from.value("id").toInt() << q_from.value("question").toString() << q_from.value("parentId").toInt();
+            if (!q_to.exec()) {
+                qDebug() << "Error in MainWindow::FillUserTable:" << q_to.lastError();
+                break;
+            }
+        }
+        user_db.close();
+        general_db.close();
     }
-    QSqlDatabase::removeDatabase("connection_name");
-    return ok;
+    QSqlDatabase::removeDatabase("connection_general");
 }
 
 
 void MainWindow::CreateDialogWindow(QString &user, int table_id)
 {
-    wgt_dialog = new DialogWindow(user, table_id, this);
+    wgt_dialog = new DialogWindow(table_id, this);
     stacked_widget_main->addWidget(wgt_dialog);
     connectPbToWindow(wgt_dialog, pb_start_dialog);
     connect(pb_start_dialog, SIGNAL(clicked()), wgt_dialog, SLOT(slotShowInitialQuestion()));
 }
 
 
-void MainWindow::CreateAddQuestionWindow(QString &user, int table_id)
+void MainWindow::CreateAddQuestionWindow(int table_id)
 {
-    wgt_add_question = new QuestionWindow(user, table_id, this);
+    // wgt_add_question = new QuestionWindow("user_", table_id, this); QuestionsSetup
+    wgt_add_question = new QuestionsSetup("user_", table_id, this);
     stacked_widget_main->addWidget(wgt_add_question);
-    connectPbToWindow(wgt_add_question, pb_add_question);
+    // connectPbToWindow(wgt_add_question, pb_add_question);
+    QSignalMapper *signal_mapper = new QSignalMapper(this);
+    signal_mapper->setMapping(pb_add_question, wgt_add_question);
+    connect(pb_add_question, SIGNAL (clicked()), signal_mapper, SLOT (map()));
+    connect(signal_mapper, SIGNAL (mapped(QWidget *)), stacked_widget_main, SLOT (setCurrentWidget(QWidget *)));
+    wgt_add_question->ConnectPbHome(stacked_widget_main, wgt_main);
 }
 
 
@@ -641,22 +699,14 @@ void MainWindow::connectPbToWindow(SecondLayoutWindow *wgt, QPushButton *pb)
 
 void MainWindow::goToMainWindow()
 {
-    stacked_widget_main->setCurrentIndex(1);
+    stacked_widget_main->setCurrentWidget(wgt_main);
 }
 
 
 void MainWindow::slotGoToMainWindow()
 {
     QString user = cbx_users->currentText();
-    int table_id = -1;
-    {
-        QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE", "connection_name");
-        db.setDatabaseName("ImagineTalkDB.db");
-        db.open();
-        table_id = getUserTableId(user);
-        db.close();
-    }
-    QSqlDatabase::removeDatabase("connection_name");
+    int table_id = getUserTableId(user);
 
     if(user.isEmpty())
     {
@@ -666,9 +716,9 @@ void MainWindow::slotGoToMainWindow()
         return;
     }
     CreateMainWindow(user);
-    CreateUserTable(table_id);
+    CreateQuestionsTable("user_", table_id);
     CreateDialogWindow(user, table_id);
-    CreateAddQuestionWindow(user, table_id);
+    CreateAddQuestionWindow(table_id);
     goToMainWindow();
 }
 
@@ -677,7 +727,9 @@ int MainWindow::getUserTableId(QString &user)
 {
     int id = -1;
     {
-        QSqlDatabase db = QSqlDatabase::database();
+        QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE", "connection_name");
+        db.setDatabaseName("ImagineTalkDB.db");
+        db.open();
 
         QSqlQuery q(db);
         q.prepare("SELECT table_number FROM Users WHERE user=?");
@@ -686,18 +738,16 @@ int MainWindow::getUserTableId(QString &user)
         if (q.first()) {
             id = q.value("table_number").toInt();
         }
-
         q.finish();
         db.close();
     }
-
+    QSqlDatabase::removeDatabase("connection_name");
     return id;
 }
 
 
 void MainWindow::slotAddUser()
 {
-
     QInputDialog dialog(this);
     dialog.setLabelText("Имя пользователя:");
     dialog.setInputMode(QInputDialog::TextInput);
@@ -706,27 +756,31 @@ void MainWindow::slotAddUser()
     if (!dialog.exec()) {
         return;
     }
-
     QString username = dialog.textValue();
     if (!username.isEmpty())
     {
+        if (userIsExist(username)) {
+            QMessageBox msg_box;
+            msg_box.setText("Пользователь с таким именем уже существует");
+            msg_box.exec();
+            return;
+        }
+        int table_id = createUserTableId();
         QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE", "connection_name");
         db.setDatabaseName("ImagineTalkDB.db");
-        db.open();
-
-        int table_id = createUserTableId();
-        cbx_users->addItem(username);
-        QSqlQuery q(db);
-        q.prepare("INSERT INTO Users (user, table_number)"
-                  "VALUES (?, ?)");
-        q.addBindValue(username);
-        q.addBindValue(table_id);
-        if(!q.exec()) {
-            qDebug() << "Insert into Users failed:" << q.lastError().text();
+        if (db.open()) {
+            cbx_users->addItem(username);
+            QSqlQuery q(db);
+            q.prepare("INSERT INTO Users (user, table_number)"
+                      "VALUES (?, ?)");
+            q.addBindValue(username);
+            q.addBindValue(table_id);
+            if(!q.exec()) {
+                qDebug() << "Insert into Users failed:" << q.lastError().text();
+            }
+            q.finish();
+            db.close();
         }
-
-        q.finish();
-        db.close();
     }
     QSqlDatabase::removeDatabase("connection_name");
     cbx_users->setCurrentText(username);
@@ -735,34 +789,31 @@ void MainWindow::slotAddUser()
 
 int MainWindow::createUserTableId()
 {
-    int id = -1;
+    QSet<int> set;
     {
-        QSqlDatabase db = QSqlDatabase::database();
-        // db.setDatabaseName("ImagineTalkDB.db");
-        // db.open();
+        QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE", "connection_name");
+        db.setDatabaseName("ImagineTalkDB.db");
+        db.open();
 
         QSqlQuery q(db);
         q.prepare("SELECT table_number FROM Users");
         if(!q.exec()) {
             qDebug() << "Error in createUserTableId:" << q.lastError().text();
         }
-        QSet<int> set;
         while (q.next()) {
             set.insert(q.value("table_number").toInt());
         }
 
         q.finish();
         db.close();
+    }
+    QSqlDatabase::removeDatabase("connection_name");
 
-        for(int i = 0; ; ++i) {
-            if(!set.contains(i)) {
-                id = i;
-                break;
-            }
+    for(int i = 0; ; ++i) {
+        if(!set.contains(i)) {
+            return i;
         }
     }
-    // QSqlDatabase::removeDatabase("connection_name");
-    return id;
 }
 
 
@@ -770,20 +821,18 @@ void MainWindow::slotDeleteUser()
 {
     {
         QString username = cbx_users->currentText();
-        QString text = "Вы действительно хотите удалить пользователя " + username + " и все данные, связанные с ним?";
+        QString text = "Вы действительно хотите удалить пользователя " + username + "\nи все данные, связанные с ним?";
                            AcceptDialog dialog(text, this);
         if (!dialog.exec())
             return;
 
-        qDebug() << "deleting" << text;
+        int table_id = getUserTableId(username);
 
         QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE", "connection_name");
         db.setDatabaseName("ImagineTalkDB.db");
         db.open();
 
         QSqlQuery q(db);
-
-        int table_id = getUserTableId(username);
         q.prepare("DROP TABLE IF EXISTS user_" + QString::number(table_id));
         if(!q.exec()) {
             qDebug() << "Error in MainWindow::slotDeleteUser - Deleting table user_" + QString::number(table_id) + " from DB failed:" << q.lastError().text();
@@ -823,3 +872,99 @@ void MainWindow::slotGoUserSelection()
     count = stacked_widget_main->count();
     qDebug() << count;
 }
+
+bool MainWindow::userIsExist(QString &username)
+{
+    bool ok = false;
+    {
+        QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE", "connection_name");
+        db.setDatabaseName("ImagineTalkDB.db");
+        db.open();
+        QSqlQuery q(db);
+        q.prepare("SELECT user FROM Users where user=?");
+        q.addBindValue(username);
+        if(q.exec()) {
+            q.first();
+            ok = q.isValid();
+        }
+        q.finish();
+        db.close();
+    }
+    QSqlDatabase::removeDatabase("connection_name");
+    return ok;
+}
+
+
+
+void MainWindow::slotGeneralQuestions()
+{
+    QString table_name = "general_";
+    int table_id = 0;
+    CreateQuestionsTable(table_name, table_id);
+    if (stacked_widget_main->indexOf(wgt_questions_setup) < 0) {
+        wgt_questions_setup = new QuestionsSetup(table_name, table_id, this);
+        stacked_widget_main->addWidget(wgt_questions_setup);
+    }
+    stacked_widget_main->setCurrentWidget(wgt_questions_setup);
+    wgt_questions_setup->ConnectPbHome(stacked_widget_main, wgt_choose_user);
+}
+
+
+bool MainWindow::CreateUsersTable()
+{
+    bool ok = false;
+    {
+        QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE");
+        db.setDatabaseName("ImagineTalkDB.db");
+        if(db.open()) {
+            qDebug() << "Data base opened";
+
+            QSqlRecord table_users = db.record("Users");
+            if(!table_users.isEmpty()) {
+                ok = true;
+            } else {
+                QSqlQuery query(db);
+                query.prepare("CREATE TABLE Users (user TEXT, table_number INT);");
+                if(!query.exec()) {
+                    qDebug() << "Create table Users failed: " << query.lastError().text();
+                } else {
+                    ok = true;
+                }
+                query.finish();
+            }
+        } else {
+            qDebug() << "open DB failed: " << db.lastError().text();
+        }
+        db.close();
+    }
+    QSqlDatabase::removeDatabase("connection_name");
+    return ok;
+}
+
+// bool MainWindow::CreateGeneralTable(QString table_name, int table_id)
+// {
+
+//     {
+//         QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE", "connection_name");
+//         db.setDatabaseName("GeneralQuestionsDB.db");
+//         db.open();
+//         QSqlRecord table = db.record(table_name + QString::number(table_id));
+//         if(table.isEmpty()) {
+//             QSqlQuery query(db);
+//             query.prepare("CREATE TABLE " + table_name + QString::number(table_id) + " ("
+//                                                         "id INTEGER PRIMARY KEY, "
+//                                                         "question TEXT, "
+//                                                         "image BLOB, "
+//                                                         "parentId INT);");
+//             if(!query.exec()) {
+//                 qDebug() << "Error in MainWindow::CreateGeneralTable: Create GeneralQuestions table failed: " << query.lastError().text();
+//             } else {
+//                 // fillGeneralQuestionsTable(id, this);
+//             }
+//             query.finish();
+//         }
+//         db.close();
+//     }
+//     QSqlDatabase::removeDatabase("connection_name");
+//     return true;
+// }

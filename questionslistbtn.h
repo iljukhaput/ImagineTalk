@@ -44,8 +44,11 @@ class QuestionsListBtn : public QScrollArea
 {
     Q_OBJECT
 
+    QString table_name;
     int table_id;
     QLabel *lbl;
+
+    QString db_name;
     int current_row;
 
     QVBoxLayout *vbx_layout;
@@ -67,7 +70,7 @@ class QuestionsListBtn : public QScrollArea
     QSignalMapper *connectMapBtnId(QPushButton *btn, int id);
     RowButton *addExpandBtn(int sql_id);
 public:
-    QuestionsListBtn(int table_id, QLabel *lbl, QWidget *parent = nullptr);
+    QuestionsListBtn(QString table_name, int table_id, QLabel *lbl, QWidget *parent = nullptr);
     int getCurrent() const { return current_row; }
     void addRow(const QString &question, const QByteArray *image);
 private slots:

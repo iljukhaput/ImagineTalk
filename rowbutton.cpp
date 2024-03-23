@@ -5,12 +5,12 @@
 #include <QVariant>
 #include <QDebug>
 
-RowButton::RowButton(int sql_id, int table_id, const QString &text, RowButton* parent_btn, QWidget *parent)
+RowButton::RowButton(int sql_id, QString table_name, const QString &text, RowButton* parent_btn, QWidget *parent)
     : QPushButton(parent)
     , sql_id(sql_id)
     , question(text)
     , expanded(false)
-    , table_id(table_id)
+    , table_name(table_name)
     , parent_btn(parent_btn)
     , expand_btn(nullptr)
 {
@@ -22,6 +22,11 @@ RowButton::RowButton(int sql_id, int table_id, const QString &text, RowButton* p
 
     QString level_prefix = createPrefix(level);
     setText(level_prefix + "|    " + text);
+
+    if (table_name == "general_0")
+        db_name = "GeneralQuestionsDB.db";
+    else
+        db_name = "ImagineTalkDB.db";
 }
 
 QString RowButton::createPrefix(int level)
@@ -68,11 +73,11 @@ bool RowButton::hasChildren() const
 {
     bool ans = false;
     QSqlDatabase db = QSqlDatabase::database();
-    db.setDatabaseName("ImagineTalkDB.db");
+    db.setDatabaseName(db_name);
     db.open();
 
     QSqlQuery q(db);
-    q.prepare("SELECT COUNT(*) FROM user_" + QString::number(table_id) + " WHERE parentId=?");
+    q.prepare("SELECT COUNT(*) FROM " + table_name + " WHERE parentId=?");
     q.addBindValue(sql_id);
     if(!q.exec()) {
         qDebug() << "Error in SqlTreeModel::hasChildren:" << q.lastError().text();
