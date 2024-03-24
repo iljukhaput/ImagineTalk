@@ -51,6 +51,8 @@ else()
             # base_questions.qrc
             rowbutton.h rowbutton.cpp
             questionssetup.h questionssetup.cpp
+            fillgeneraltable.cpp
+            GeneralQuestions.qrc
         )
     endif()
 endif()

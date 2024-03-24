@@ -11,6 +11,7 @@
 #include <QHBoxLayout>
 #include <QPushButton>
 #include <QStackedWidget>
+#include <QScrollBar>
 
 DialogWindow::DialogWindow(int table_id, QWidget *parent)
     : SecondLayoutWindow(table_id, parent)
@@ -138,26 +139,30 @@ int DialogWindow::rowCount(QSqlQuery *query)
 
 void DialogWindow::slotIncreaseImages()
 {
+    QScrollArea *scroll_area = static_cast<QScrollArea *>(stacked_widget_dialog->currentWidget());
+    int scroll_val = scroll_area->verticalScrollBar()->value();
     clearStackedWidget();
     scale++;
-    QScrollArea *scroll_area = nullptr;
     for (int i = 0; i < backpath.size(); ++i) {
         scroll_area = createQAWidget(backpath.at(i));
         stacked_widget_dialog->addWidget(scroll_area);
     }
+    scroll_area->verticalScrollBar()->setValue(scroll_val);
     stacked_widget_dialog->setCurrentWidget(scroll_area);
 }
 
 
 void DialogWindow::slotDecreaseImages()
 {
+    QScrollArea *scroll_area = static_cast<QScrollArea *>(stacked_widget_dialog->currentWidget());
+    int scroll_val = scroll_area->verticalScrollBar()->value();
     clearStackedWidget();
     scale--;
-    QScrollArea *scroll_area = nullptr;
     for (int i = 0; i < backpath.size(); ++i) {
         scroll_area = createQAWidget(backpath.at(i));
         stacked_widget_dialog->addWidget(scroll_area);
     }
+    scroll_area->verticalScrollBar()->setValue(scroll_val);
     stacked_widget_dialog->setCurrentWidget(scroll_area);
 }
 

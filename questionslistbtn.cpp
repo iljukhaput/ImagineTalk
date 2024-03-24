@@ -7,6 +7,8 @@
 #include <QSignalMapper>
 #include <QDebug>
 #include <QScrollBar>
+#include <QGuiApplication>
+
 
 QuestionsListBtn::QuestionsListBtn(QString table_name, int table_id, QLabel *lbl, QWidget *parent)
     : QScrollArea(parent), table_name(table_name), table_id(table_id), lbl(lbl), current_row(0)
@@ -172,8 +174,10 @@ void QuestionsListBtn::slotClickExpand(int sql_id)
         Collapse(sql_id);
         current_btn->setExpanded(false);
     } else {
+        QGuiApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
         Expand(sql_id);
         current_btn->setExpanded(true);
+        QGuiApplication::restoreOverrideCursor();
     }
     qDebug() << hash_visible_btns.keys();
     updateList();
